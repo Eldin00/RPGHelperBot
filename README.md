@@ -10,4 +10,3 @@ Current status:
 
 Immediate development goals:
 * Implement commands for dice rolling.
-* Bring serenity up to the current version, and tokio up to the newest version supported by serenity.
