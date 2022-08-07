@@ -1,11 +1,11 @@
 [package]
 name = "rpg-helper-bot"
 authors = ["Eric McKeeth <eldin00@gmail.com>"]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = {version = "0.2.25", features = ["macros"]}
-serenity = { default-features = false, features = ["client","gateway","model","rustls_backend"], version = "0.9.4" }
+tokio = {version = "1.20.1", features = ["macros", "rt-multi-thread"]}
+serenity = { default-features = false, features = ["client","gateway","model","rustls_backend"], version = "0.11.5" }
