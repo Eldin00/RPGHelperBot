@@ -1,4 +1,4 @@
-pub mod dice_command;
+mod dice_commands;
 
 use serenity::{
     async_trait,
