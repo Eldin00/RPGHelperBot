@@ -10,3 +10,4 @@ Current status:
 
 Immediate development goals:
 * Implement commands for dice rolling.
+* Look into replacing serenity::framework with something like poise, to facilitate using slash commands instead of prefix commands. 
