@@ -28,6 +28,5 @@ pub mod dice_commands {
     
         Ok(())
     }
-        
 
 }
