@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate lazy_static;
+
 mod dice_commands;
 
 use crate::dice_commands::dice_commands::GENERAL_GROUP;
