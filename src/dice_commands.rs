@@ -26,18 +26,22 @@ pub mod dice_commands {
     async fn roll(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         let m = eval_dice_command(_args.message());
         match m {
-            Some(m) => { _ = msg.channel_id.say(&ctx.http, m).await; },
-            None => { _ = msg.channel_id.say(&ctx.http, "Error parsing dice roll.").await; },
+            Some(m) => {
+                _ = msg.channel_id.say(&ctx.http, m).await;
+            }
+            None => {
+                _ = msg
+                    .channel_id
+                    .say(&ctx.http, "Error parsing dice roll.")
+                    .await;
+            }
         }
         Ok(())
     }
 
     fn parse_int(value: Option<Match>, default: i32) -> i32 {
         match value {
-            Some(value) => {
-                println!("{}", value.as_str());
-                value.as_str().parse::<i32>().unwrap_or(default)
-            },
+            Some(value) => value.as_str().parse::<i32>().unwrap_or(default),
             None => default,
         }
     }
@@ -51,18 +55,14 @@ pub mod dice_commands {
         }
         if let Some(group) = RE.captures(&command.replace(" ", "")) {
             if group.name("die_sides").is_some() {
-                println!("count");
                 let die_count: i32 = max(parse_int(group.name("die_count"), 1), 1);
-                println!("sides");
                 let die_sides: i32 = max(parse_int(group.name("die_sides"), 10), 1);
-                println!("mod");
                 let modifier: i32 = parse_int(group.name("modifier"), 0);
-                println!("repeat");
                 let repeat: i32 = parse_int(group.name("repeat"), 1);
 
                 let mut result: String = "".to_string();
                 for _i in 0..repeat {
-                    result = format!("{}{} ", result,  (xdy(die_count, die_sides) + modifier));
+                    result = format!("{}{} ", result, (xdy(die_count, die_sides) + modifier));
                 }
                 return Some(result);
             }
