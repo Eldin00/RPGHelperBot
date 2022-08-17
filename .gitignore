@@ -1,5 +1,4 @@
 /target
-src/secrets.json
 Cargo.lock
-.vscode/launch.json
+/.vscode
 config.json
