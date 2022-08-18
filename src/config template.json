@@ -1,1 +1,4 @@
-{ "token": "<token goes here or 'ENV' to get token from environment variable>" }
+{ 
+    "token": "<token goes here or 'ENV' to get token from environment variable>",
+    "prefix": "!"
+}
