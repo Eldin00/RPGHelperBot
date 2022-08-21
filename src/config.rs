@@ -8,22 +8,26 @@ pub mod config {
 
     impl Config {
         pub fn new(configfile: &str) -> Self {
-            let text: String = std::fs::read_to_string(configfile).unwrap();
-            match serde_json::from_str(&text) {
-                Ok(c) => return c,
-                _ => {
-                    return Config {
-                        token: None,
-                        prefix: Some("!".to_string()),
+            if let Ok(text) = std::fs::read_to_string(configfile) {
+                match serde_json::from_str(&text) {
+                    Ok(c) => return c,
+                    Err(msg) => {
+                        println!("Invalid config: {}", msg);
                     }
-                }
+                };
+            }
+            return Config {
+                token: None,
+                prefix: Some("!".to_string()),
             };
         }
 
         //get config values with appropriate fallbacks and defaults
         pub fn get_token(self: &Self) -> String {
             match self.token.as_deref() {
-                Some("ENV") | None  => std::env::var("DISCORD_TOKEN").expect("Unable to determine token!"),
+                Some("ENV") | None => {
+                    std::env::var("DISCORD_TOKEN").expect("Unable to determine token!")
+                }
                 Some(token) => token.to_string(),
             }
         }
@@ -43,6 +47,5 @@ pub mod config {
         pub fn set_prefix(&mut self, prefix: &str) {
             self.prefix = Some(prefix.to_string());
         }
-
     }
 }
