@@ -19,5 +19,4 @@ This is a discord bot intended to assist with using Discord as a forum to play p
 
 ## Immediate development goals:
 * Look into replacing serenity::framework with something like poise, to facilitate using slash commands instead of prefix commands. 
-* Work on formatting of bot's responses.
 * Create game-system specific commands for at least one game system.
