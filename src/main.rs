@@ -4,9 +4,11 @@ extern crate lazy_static;
 mod config;
 mod dbinterface;
 mod dice_commands;
+mod cp2020_functions;
 
 use crate::config::config::Config;
 use crate::dice_commands::dice_commands::GENERAL_GROUP;
+use crate::cp2020_functions::cp2020_functions::CP_COMMANDS_GROUP;
 
 use clap::Parser;
 use lazy_static::lazy_static;
