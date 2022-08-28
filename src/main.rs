@@ -2,13 +2,13 @@
 extern crate lazy_static;
 
 mod config;
+mod cp2020_functions;
 mod dbinterface;
 mod dice_commands;
-mod cp2020_functions;
 
 use crate::config::config::Config;
+use crate::cp2020_functions::cp2020_functions::CPCOMMANDS_GROUP;
 use crate::dice_commands::dice_commands::GENERAL_GROUP;
-use crate::cp2020_functions::cp2020_functions::CP_COMMANDS_GROUP;
 
 use clap::Parser;
 use lazy_static::lazy_static;
@@ -92,12 +92,12 @@ async fn main() {
     let token: String = CONF.read().as_deref().unwrap().get_token();
 
     let framework = StandardFramework::new()
-    .configure(|c| {
-        c.case_insensitivity(true)
-            .prefix(CONF.read().as_deref().unwrap().get_prefix())
-    })
-    .group(&GENERAL_GROUP)
-    .group(&CP_COMMANDS_GROUP);
+        .configure(|c| {
+            c.case_insensitivity(true)
+                .prefix(CONF.read().as_deref().unwrap().get_prefix())
+        })
+        .group(&GENERAL_GROUP)
+        .group(&CPCOMMANDS_GROUP);
 
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
 

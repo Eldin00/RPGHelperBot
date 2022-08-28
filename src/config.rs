@@ -19,7 +19,9 @@ pub mod config {
         pub fn parse_config(&mut self, configfile: &str) {
             if let Ok(text) = std::fs::read_to_string(configfile) {
                 match serde_json::from_str(&text) {
-                    Ok(c) => {*self = c;},
+                    Ok(c) => {
+                        *self = c;
+                    }
                     Err(msg) => {
                         println!("Invalid config: {}", msg);
                     }
@@ -63,6 +65,5 @@ pub mod config {
         pub fn set_db_url(&mut self, db: &str) {
             self.db_url = Some(db.to_string());
         }
-        
     }
 }
