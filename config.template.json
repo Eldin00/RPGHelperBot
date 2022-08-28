@@ -1,4 +1,5 @@
 { 
     "token": "<token goes here or 'ENV' to get token from environment variable>",
-    "prefix": "!"
+    "prefix": "!",
+    "db_url": "<location of SQLite database goes here>"
 }
