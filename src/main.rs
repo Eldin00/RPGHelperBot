@@ -46,10 +46,6 @@ lazy_static! {
     static ref CONF: RwLock<Config> = RwLock::new(Config::new());
 }
 
-lazy_static! {
-    static ref CONF: RwLock<Config> = RwLock::new(Config::new());
-}
-
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
@@ -69,21 +65,30 @@ async fn main() {
 
     //if any config options were passed on the command line, use those values.
     if let Some(t) = args.token.as_deref() {
-        loop { 
+        loop {
             if let Ok(c) = CONF.try_write().as_deref_mut() {
                 c.set_token(t);
                 break;
+            }
         }
-    }
     };
     if let Some(p) = args.prefix.as_deref() {
-        loop { 
+        loop {
             if let Ok(c) = CONF.try_write().as_deref_mut() {
                 c.set_prefix(p);
                 break;
+            }
         }
-    }}
+    }
 
+    if let Some(db) = args.db_url.as_deref() {
+        loop {
+            if let Ok(c) = CONF.try_write().as_deref_mut() {
+                c.set_db_url(db);
+                break;
+            }
+        }
+    }
     let token: String = CONF.read().as_deref().unwrap().get_token();
 
     let framework = StandardFramework::new()
