@@ -4,6 +4,7 @@ pub mod config {
     pub struct Config {
         token: Option<String>,
         prefix: Option<String>,
+        db_url: Option<String>,
     }
 
     impl Config {
@@ -11,6 +12,7 @@ pub mod config {
             return Config {
                 token: None,
                 prefix: Some("!".to_string()),
+                db_url: None,
             };
         }
 
@@ -42,6 +44,13 @@ pub mod config {
             }
         }
 
+        pub fn get_db_url(self: &Self) -> String {
+            match &self.db_url {
+                Some(db) => db.to_string(),
+                None => "".to_string(),
+            }
+        }
+
         //set config values
         pub fn set_token(&mut self, token: &str) {
             self.token = Some(token.to_string());
@@ -50,5 +59,10 @@ pub mod config {
         pub fn set_prefix(&mut self, prefix: &str) {
             self.prefix = Some(prefix.to_string());
         }
+
+        pub fn set_db_url(&mut self, db: &str) {
+            self.db_url = Some(db.to_string());
+        }
+        
     }
 }

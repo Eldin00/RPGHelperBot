@@ -2,6 +2,7 @@
 extern crate lazy_static;
 
 mod config;
+mod dbinterface;
 mod dice_commands;
 
 use crate::config::config::Config;
@@ -35,6 +36,8 @@ struct Args {
     /// Config file to use
     #[clap(short, long, value_parser)]
     config: Option<String>,
+    #[clap(short, long, value_parser)]
+    db_url: Option<String>,
 }
 
 lazy_static! {
@@ -50,31 +53,40 @@ async fn main() {
         Some(x) => x,
         None => "config.json",
     };
-    
+
     loop {
         if let Ok(c) = CONF.try_write().as_deref_mut() {
             c.parse_config(config_file);
             break;
         }
     }
- 
+
     //if any config options were passed on the command line, use those values.
     if let Some(t) = args.token.as_deref() {
-        loop { 
+        loop {
             if let Ok(c) = CONF.try_write().as_deref_mut() {
                 c.set_token(t);
                 break;
+            }
         }
-    }
     };
     if let Some(p) = args.prefix.as_deref() {
-        loop { 
+        loop {
             if let Ok(c) = CONF.try_write().as_deref_mut() {
                 c.set_prefix(p);
                 break;
+            }
         }
-    }}
+    }
 
+    if let Some(db) = args.db_url.as_deref() {
+        loop {
+            if let Ok(c) = CONF.try_write().as_deref_mut() {
+                c.set_db_url(db);
+                break;
+            }
+        }
+    }
     let token: String = CONF.read().as_deref().unwrap().get_token();
 
     let framework = StandardFramework::new()
