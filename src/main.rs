@@ -92,12 +92,12 @@ async fn main() {
     let token: String = CONF.read().as_deref().unwrap().get_token();
 
     let framework = StandardFramework::new()
-        .configure(|c| {
-            c.case_insensitivity(true)
-                .prefix(CONF.read().as_deref().unwrap().get_prefix())
-        })
-        .group(&GENERAL_GROUP)
-        .group(&CP_COMMANDS_GROUP);
+    .configure(|c| {
+        c.case_insensitivity(true)
+            .prefix(CONF.read().as_deref().unwrap().get_prefix())
+    })
+    .group(&GENERAL_GROUP)
+    .group(&CP_COMMANDS_GROUP);
 
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
 
