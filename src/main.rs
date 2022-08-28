@@ -8,9 +8,11 @@ use crate::config::config::Config;
 use crate::dice_commands::dice_commands::GENERAL_GROUP;
 
 use clap::Parser;
+use lazy_static::lazy_static;
 use serenity::{
     async_trait, framework::standard::StandardFramework, model::gateway::Ready, prelude::*,
 };
+use std::sync::RwLock;
 
 struct Handler;
 
@@ -35,6 +37,10 @@ struct Args {
     config: Option<String>,
 }
 
+lazy_static! {
+    static ref CONF: RwLock<Config> = RwLock::new(Config::new());
+}
+
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
@@ -44,21 +50,38 @@ async fn main() {
         Some(x) => x,
         None => "config.json",
     };
-
-    let mut config = Config::new(config_file);
-
+    
+    loop {
+        if let Ok(c) = CONF.try_write().as_deref_mut() {
+            c.parse_config(config_file);
+            break;
+        }
+    }
+ 
     //if any config options were passed on the command line, use those values.
     if let Some(t) = args.token.as_deref() {
-        config.set_token(t);
+        loop { 
+            if let Ok(c) = CONF.try_write().as_deref_mut() {
+                c.set_token(t);
+                break;
+        }
     }
+    };
     if let Some(p) = args.prefix.as_deref() {
-        config.set_prefix(p);
-    }
+        loop { 
+            if let Ok(c) = CONF.try_write().as_deref_mut() {
+                c.set_prefix(p);
+                break;
+        }
+    }}
 
-    let token: String = config.get_token();
+    let token: String = CONF.read().as_deref().unwrap().get_token();
 
     let framework = StandardFramework::new()
-        .configure(|c| c.case_insensitivity(true).prefix(config.get_prefix()))
+        .configure(|c| {
+            c.case_insensitivity(true)
+                .prefix(CONF.read().as_deref().unwrap().get_prefix())
+        })
         .group(&GENERAL_GROUP);
 
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;

@@ -1,25 +1,28 @@
 pub mod config {
 
-    #[derive(serde::Serialize, serde::Deserialize)]
+    #[derive(serde::Serialize, serde::Deserialize, Clone)]
     pub struct Config {
         token: Option<String>,
         prefix: Option<String>,
     }
 
     impl Config {
-        pub fn new(configfile: &str) -> Self {
+        pub fn new() -> Self {
+            return Config {
+                token: None,
+                prefix: Some("!".to_string()),
+            };
+        }
+
+        pub fn parse_config(&mut self, configfile: &str) {
             if let Ok(text) = std::fs::read_to_string(configfile) {
                 match serde_json::from_str(&text) {
-                    Ok(c) => return c,
+                    Ok(c) => {*self = c;},
                     Err(msg) => {
                         println!("Invalid config: {}", msg);
                     }
                 };
             }
-            return Config {
-                token: None,
-                prefix: Some("!".to_string()),
-            };
         }
 
         //get config values with appropriate fallbacks and defaults
