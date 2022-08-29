@@ -7,7 +7,7 @@ mod dbinterface;
 mod dice_commands;
 
 use crate::config::config::Config;
-use crate::cp2020_functions::cp2020_functions::CPCOMMANDS_GROUP;
+use crate::cp2020_functions::cp2020_functions::*;
 use crate::dice_commands::dice_commands::GENERAL_GROUP;
 
 use clap::Parser;
@@ -91,6 +91,8 @@ async fn main() {
     }
     let token: String = CONF.read().as_deref().unwrap().get_token();
 
+    dbinterface::dbinterface::init_db().await;
+
     let framework = StandardFramework::new()
         .configure(|c| {
             c.case_insensitivity(true)
@@ -110,4 +112,6 @@ async fn main() {
     if let Err(why) = client.start().await {
         println!("Client error: {:?}", why)
     }
+
+    cp2020_init().await;
 }
