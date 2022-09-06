@@ -17,6 +17,8 @@ pub mod cp2020_functions {
     }
 
     struct Cp2020Character {
+        id: i64,
+        character_name: String,
         role: String,
         inteligence: u8,
         reflex: u8,
@@ -45,13 +47,16 @@ pub mod cp2020_functions {
         let mut response: String = String::from("");
         if let Some(cid) = get_active_character(&serverid, &userid).await {
             if let Some(character) = get_character(cid).await {
-                modifier += character.initiative as u32;    
-                if character.role.to_lowercase() == "solo"{
-                        modifier += character.special_ability as u32;
-                    }
-                }else { response += "__***Active character could not be loaded!***__\n"} 
+                modifier += character.initiative as u32;
+                if character.role.to_lowercase() == "solo" {
+                    modifier += character.special_ability as u32;
+                }
+            } else {
+                response += "__***Active character could not be loaded!***__\n"
             }
-        else { response += "*No active character.*\n"};
+        } else {
+            response += "*No active character.*\n"
+        };
         let user = if msg.is_private() {
             "You"
         } else {
@@ -80,30 +85,38 @@ pub mod cp2020_functions {
         if let Some(cid) = get_active_character(&serverid, &userid).await {
             if let Some(character) = get_character(cid).await {
                 if let Ok(skill) = args.single::<String>() {
-                    let c: Vec<&Cp2020Skill> = character.skills.iter().filter(|&x| {x.skill_name.to_lowercase() == skill.to_lowercase()} ).collect();
-                    
+                    let c: Vec<&Cp2020Skill> = character
+                        .skills
+                        .iter()
+                        .filter(|&x| x.skill_name.to_lowercase() == skill.to_lowercase())
+                        .collect();
+
                     if c.len() > 0 {
-                        modifier += (c[0].skill_value + match c[0].skill_attribute.to_lowercase().as_str() {
-                            "inteligence" => character.inteligence,
-                            "reflex" => character.reflex,
-                            "tech" => character.tech,
-                            "cool" => character.cool,
-                            "attractiveness" => character.attractiveness,
-                            "movement" => character.movement,
-                            "body" => character.body,
-                            "empathy" => character.empathy,
-                            _ => 0,
-                        }) as u32 
+                        modifier += (c[0].skill_value
+                            + match c[0].skill_attribute.to_lowercase().as_str() {
+                                "inteligence" => character.inteligence,
+                                "reflex" => character.reflex,
+                                "tech" => character.tech,
+                                "cool" => character.cool,
+                                "attractiveness" => character.attractiveness,
+                                "movement" => character.movement,
+                                "body" => character.body,
+                                "empathy" => character.empathy,
+                                _ => 0,
+                            }) as u32
                     }
-                    if character.role.to_lowercase() == "solo" && skill.to_lowercase() == "awareness/notice" {
+                    if character.role.to_lowercase() == "solo"
+                        && skill.to_lowercase() == "awareness/notice"
+                    {
                         modifier += character.special_ability as u32;
                     }
-                } 
-
+                }
+            } else {
+                response += "__***Active character could not be loaded!***__\n"
             }
-            else { response += "__***Active character could not be loaded!***__\n"}
-        }
-        else { response += "*No active character.*\n"};
+        } else {
+            response += "*No active character.*\n"
+        };
         let user = if msg.is_private() {
             "You"
         } else {
@@ -111,9 +124,14 @@ pub mod cp2020_functions {
         };
         let result = d10_exploding();
         response = if result == 1 {
-            format!("{}{} rolled a skill and critically failed!",response, user)
+            format!("{}{} rolled a skill and critically failed!", response, user)
         } else {
-            format!("{}{} rolled a skill and got {}", response, user, result + modifier)
+            format!(
+                "{}{} rolled a skill and got {}",
+                response,
+                user,
+                result + modifier
+            )
         };
 
         if let Err(why) = msg.channel_id.say(&ctx.http, response).await {
@@ -135,12 +153,49 @@ pub mod cp2020_functions {
     }
 
     #[command]
-    async fn cp_pick_char(ctx: &Context, msg: &Message, mut _args: Args) -> CommandResult {
-        let mut result = "Not yet implemented".to_string();
-        while let Ok(a) = _args.single::<String>() {
-            result = result + "\n" + a.as_str();
+    async fn cp_pick_char(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+        let serverid = format!("{}", msg.guild_id.unwrap().0);
+        let userid = format!("{}", msg.author.id.0);
+        let characters = get_character_list(&serverid, &userid).await;
+        let mut response = String::from("");
+        if characters.len() == 0 {
+            response += "You do not have any characters saved on this server!";
+        } else if args.is_empty() {
+            for i in 0..characters.len() {
+                response += format!(
+                    "{}: {} ({})\n",
+                    i + 1,
+                    characters[i].character_name.as_str(),
+                    characters[i].role.as_str()
+                )
+                .as_str();
+            }
+        } else {
+            if let Ok(a) = args.single::<String>() {
+                if let Ok(chr_num) = a.parse::<u32>() {
+                    let c = &characters[(chr_num - 1) as usize];
+                    set_active_character(&serverid, &userid, c.id).await;
+                    response += format!("Set active character to {} ({})", c.character_name, c.role)
+                        .as_str()
+                } else {
+                    let chars: Vec<&Cp2020Character> = characters
+                        .iter()
+                        .filter(|&c| c.character_name.to_lowercase() == a.to_lowercase())
+                        .collect();
+                    if chars.len() > 0 {
+                        set_active_character(&serverid, &userid, chars[0].id).await;
+                        response += format!(
+                            "Set active character to {} ({})",
+                            chars[0].character_name, chars[0].role
+                        )
+                        .as_str();
+                    } else {
+                        response += format!("Unable to find saved character {}", a).as_str();
+                    }
+                }
+            }
         }
-        if let Err(why) = msg.channel_id.say(&ctx.http, result).await {
+        if let Err(why) = msg.channel_id.say(&ctx.http, response).await {
             println!("Error sending message: {:?}", why);
         }
         Ok(())
@@ -148,16 +203,18 @@ pub mod cp2020_functions {
 
     async fn get_active_character(serverid: &str, userid: &str) -> Option<i64> {
         if let Some(db) = DB_POOL.get() {
-            let sql = "SELECT character_id FROM active_characters WHERE server_id = ? AND user_id = ?";
+            let sql =
+                "SELECT character_id FROM active_characters WHERE server_id = ? AND user_id = ?";
             if let Ok(row) = sqlx::query(sql)
                 .bind(serverid)
                 .bind(userid)
                 .fetch_one(db)
-                .await {
-                    if let Ok(r) = row.try_get("character_id") {
-                        return Some(r);
-                    }
+                .await
+            {
+                if let Ok(r) = row.try_get("character_id") {
+                    return Some(r);
                 }
+            }
         }
         None
     }
@@ -167,10 +224,32 @@ pub mod cp2020_functions {
     }
 
     async fn get_character_list(serverid: &str, userid: &str) -> Vec<Cp2020Character> {
-        // placeholder for adding functionality to get a list of available characters for a user.
-        return vec![];
+        let mut characters: Vec<Cp2020Character> = vec![];
+        if let Some(db) = DB_POOL.get() {
+            let sql = "SELECT id, character_name, role FROM cp2020.characters WHERE server_id = ? AND user_id = ? ORDER BY id ASC";
+            let mut rows = sqlx::query(sql).bind(serverid).bind(userid).fetch(db);
+            while let Ok(Some(chr)) = rows.try_next().await {
+                let skills = get_skills(chr.get("id")).await;
+                characters.push(Cp2020Character {
+                    id: chr.get("id"),
+                    character_name: chr.get("character_name"),
+                    role: chr.get("role"),
+                    inteligence: chr.get("inteligence"),
+                    reflex: chr.get("reflex"),
+                    initiative: chr.get("initiative"),
+                    tech: chr.get("tech"),
+                    cool: chr.get("cool"),
+                    attractiveness: chr.get("attractiveness"),
+                    movement: chr.get("movement"),
+                    body: chr.get("body"),
+                    empathy: chr.get("empathy"),
+                    special_ability: chr.get("special_ability"),
+                    skills: skills,
+                });
+            }
+        }
+        characters
     }
-
 
     fn d10_exploding() -> u32 {
         let mut total: u32 = 0;
@@ -188,10 +267,12 @@ pub mod cp2020_functions {
             let character_qry = "SELECT id, server_id, user_id, role, inteligence, reflex, initiative, tech, cool, attractiveness, movement, body, empathy, special_ability 
                              FROM cp2020.characters
                              WHERE character_id = ?";
-            let mut character = sqlx::query(character_qry).bind(characterid).fetch(db); 
+            let mut character = sqlx::query(character_qry).bind(characterid).fetch(db);
             if let Ok(Some(chr)) = character.try_next().await {
                 let skills = get_skills(characterid).await;
                 return Some(Cp2020Character {
+                    id: chr.get("id"),
+                    character_name: chr.get("character_name"),
                     role: chr.get("role"),
                     inteligence: chr.get("inteligence"),
                     reflex: chr.get("reflex"),
@@ -267,8 +348,8 @@ pub mod cp2020_functions {
             _ = sqlx::query(character_index).execute(db).await;
             _ = sqlx::query(skill_table).execute(db).await;
             _ = sqlx::query(skill_index).execute(db).await;
-            _ = sqlx::query(active_character_table).execute(db).await; 
-            _ = sqlx::query(active_character_index).execute(db).await; 
+            _ = sqlx::query(active_character_table).execute(db).await;
+            _ = sqlx::query(active_character_index).execute(db).await;
         }
     }
 }
