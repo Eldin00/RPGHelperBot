@@ -219,7 +219,7 @@ pub mod cp2020_functions {
         None
     }
 
-    async fn set_active_character(serverid: &str, userid: &str, characterid: i64) {
+    async fn set_active_character(_serverid: &str, _userid: &str, _characterid: i64) {
         // placeholder for adding functionality to set which character to use for a user.
     }
 
