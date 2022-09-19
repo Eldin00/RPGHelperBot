@@ -174,21 +174,28 @@ pub mod cp2020_functions {
             if let Ok(a) = args.single::<String>() {
                 if let Ok(chr_num) = a.parse::<u32>() {
                     let c = &characters[(chr_num - 1) as usize];
-                    set_active_character(&serverid, &userid, c.id).await;
-                    response += format!("Set active character to {} ({})", c.character_name, c.role)
+                    if !set_active_character(&serverid, &userid, c.id).await {
+                        response = String::from("Error setting character!");
+                    } else {
+                        response += format!("Set active character to {} ({})", c.character_name, c.role)
                         .as_str()
+                    }
                 } else {
                     let chars: Vec<&Cp2020Character> = characters
                         .iter()
                         .filter(|&c| c.character_name.to_lowercase() == a.to_lowercase())
                         .collect();
                     if chars.len() > 0 {
-                        set_active_character(&serverid, &userid, chars[0].id).await;
+                        if !set_active_character(&serverid, &userid, chars[0].id).await {
+                            response = String::from("Error setting character!");
+                        } else {
+                        
                         response += format!(
                             "Set active character to {} ({})",
                             chars[0].character_name, chars[0].role
                         )
                         .as_str();
+                    }
                     } else {
                         response += format!("Unable to find saved character {}", a).as_str();
                     }
@@ -219,8 +226,15 @@ pub mod cp2020_functions {
         None
     }
 
-    async fn set_active_character(_serverid: &str, _userid: &str, _characterid: i64) {
-        // placeholder for adding functionality to set which character to use for a user.
+    async fn set_active_character(serverid: &str, userid: &str, characterid: i64) -> bool {
+        if let Some(db) = DB_POOL.get() {
+            let sql_del = "DELETE FROM active_characters WHERE server_id = ? AND user_id = ?";
+            let sql_ins = "INSERT INTO active_characters (server_id, user_id, character_id) VALUES (?, ?, ?)";
+            _ = sqlx::query(sql_del).bind(serverid).bind(userid).execute(db).await;
+            let ret = sqlx::query(sql_ins).bind(serverid).bind(userid).bind(characterid).execute(db).await;
+            return ret.is_ok();
+        }
+        false
     }
 
     async fn get_character_list(serverid: &str, userid: &str) -> Vec<Cp2020Character> {
