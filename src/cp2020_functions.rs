@@ -2,8 +2,8 @@ pub mod cp2020_functions {
     use rand::Rng;
     use serenity::{
         framework::standard::{macros::*, Args, CommandResult},
-        futures::TryStreamExt,
-        model::channel::Message,
+        futures::{TryStreamExt},
+        model::{channel::Message},
         prelude::*,
     };
     use sqlx::Row;
@@ -146,6 +146,7 @@ pub mod cp2020_functions {
         while let Ok(a) = _args.single::<String>() {
             result = result + "\n" + a.as_str();
         }
+
         if let Err(why) = msg.channel_id.say(&ctx.http, result).await {
             println!("Error sending message: {:?}", why);
         }
