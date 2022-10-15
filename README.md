@@ -12,11 +12,22 @@ This is a discord bot intended to assist with using Discord as a forum to play p
   * 3d6*6 (roll 3 6-sided dice, 6 times, and return each total)
   * 2d8+2*3 (roll 2 8-sided dice and add 2 to the roll. Repeat this 3 times and return each total)
 
+## Game specific commands
+### Cyberpunk 2020
+* !cp_init - Roll initiative. If you have an active tracked character, apply initiative score and combat sense if applicable.
+* !cp_skill <skillname> - Make a skill roll. If you have an active tracked character, and specify a skill, the appropriate attribute and skill rank are applied.
+* !cp_pick_char <character> - If character is unspecified, it will show a list of your characters which are currently being tracked. If character name (or number from the displayed list) is specified, set that character as your active character.
+* !cp_add_char - Add a tracked character. Not yet fully implemented.
+
 ## Current status
 * Bot can connect to server and listen for commands. 
 * Basic dice rolling functionality is implemented.
 * Support for controlling settings via config file or command line options.
+* Support for game-specific commands for the following games: Cyberpunk 2020
+* Support for character tracking for the following games: Cyberpunk 2020 (partial)
+
 
 ## Immediate development goals:
 * Look into replacing serenity::framework with something like poise, to facilitate using slash commands instead of prefix commands. 
-* Create game-system specific commands for at least one game system.
+* Need to implement adding a character to the bot.
+* Need to implement updating a tracked character.

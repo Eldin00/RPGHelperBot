@@ -61,17 +61,25 @@ pub mod dice_commands {
                 let repeat: i32 = parse_int(group.name("repeat"), 1);
                 let mut canonical_cmd = format!("{}D{}", die_count, die_sides);
 
-                if modifier > 0 {canonical_cmd = format!("{} + {}", canonical_cmd, modifier); } 
-                else if modifier < 0 {canonical_cmd = format!("{} - {}", canonical_cmd, modifier*-1);}
-                if repeat > 1 {canonical_cmd = format!("{}, {} times.", canonical_cmd, repeat);}  
-
+                if modifier > 0 {
+                    canonical_cmd = format!("{} + {}", canonical_cmd, modifier);
+                } else if modifier < 0 {
+                    canonical_cmd = format!("{} - {}", canonical_cmd, modifier * -1);
+                }
+                if repeat > 1 {
+                    canonical_cmd = format!("{}, {} times.", canonical_cmd, repeat);
+                }
 
                 let mut result: String = "".to_string();
                 for _i in 0..repeat {
                     result = format!("{}{} ", result, (xdy(die_count, die_sides) + modifier));
                 }
-                let user = if msg.is_private() {"You"} else {msg.author.name.as_str() };
-                result = format!{"{} rolled {} and got:\n{}", user, canonical_cmd, result};
+                let user = if msg.is_private() {
+                    "You"
+                } else {
+                    msg.author.name.as_str()
+                };
+                result = format! {"{} rolled {} and got:\n{}", user, canonical_cmd, result};
                 return Some(result);
             }
         }

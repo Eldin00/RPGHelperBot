@@ -1,18 +1,18 @@
 pub mod dbinterface {
 
+    use once_cell::sync::OnceCell;
     use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
-    use std::sync::RwLock;
+    use crate::CONF;
 
-    lazy_static! {
-        static ref DB_POOL: RwLock<Option<SqlitePool>> = RwLock::new(None);
-    }
+    pub static DB_POOL: OnceCell<SqlitePool> = OnceCell::new();
 
-    pub async fn init_db(db_url: &str) {
-        if let Ok(db) = DB_POOL.try_write().as_deref_mut() {
+    pub async fn init_db() {
+        let db_url = &(*CONF.read().as_deref().unwrap().get_db_url()).to_string();
+        if DB_POOL.get().is_none() {
             if !Sqlite::database_exists(db_url).await.unwrap_or(false) {
                 Sqlite::create_database(db_url).await.unwrap();
             }
-            *db = Some(SqlitePool::connect(db_url).await.unwrap());
+            _ = DB_POOL.set(SqlitePool::connect(db_url).await.unwrap());
         }
     }
 }
