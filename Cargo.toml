@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 tokio = {version = "1.20", features = ["macros", "rt-multi-thread"]}
-serenity = { default-features = false, features = ["client","gateway","model","rustls_backend", "framework", "standard_framework", "builder", "http", "utils", "collector"], version = "0.11" }
+serenity = { default-features = false, features = ["client","gateway","model","rustls_backend", "framework", "standard_framework", "builder", "http", "utils", "collector", "unstable_discord_api"], version = "0.11" }
 lazy_static = "1.4"
 regex = "1.6"
 rand = "0.8"
