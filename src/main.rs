@@ -5,6 +5,7 @@ mod config;
 mod cp2020_functions;
 mod dbinterface;
 mod dice_commands;
+mod cp2020;
 
 use crate::config::config::Config;
 use crate::dice_commands::dice_commands::GENERAL_GROUP;
@@ -12,7 +13,7 @@ use crate::dice_commands::dice_commands::GENERAL_GROUP;
 use clap::Parser;
 use lazy_static::lazy_static;
 use serenity::{
-    async_trait, framework::standard::StandardFramework, model::gateway::Ready, prelude::*,
+    async_trait, framework::standard::StandardFramework, model::gateway::Ready, prelude::*, builder::CreateApplicationCommand,
 };
 use std::sync::RwLock;
 
@@ -111,6 +112,7 @@ async fn main() {
     if let Err(why) = client.start().await {
         println!("Client error: {:?}", why)
     }
+
 
     cp2020_functions::cp2020_init().await;
 }
