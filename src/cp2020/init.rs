@@ -1,10 +1,5 @@
 use serenity::{
-    builder::CreateApplicationCommand,
-    model::{
-        prelude::{
-            application::interaction::{Interaction},
-        },
-    },
+    builder::CreateApplicationCommand, model::prelude::application::interaction::Interaction,
     prelude::*,
 };
 
