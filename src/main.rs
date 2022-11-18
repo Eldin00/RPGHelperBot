@@ -13,16 +13,66 @@ use crate::dice_commands::dice_commands::GENERAL_GROUP;
 use clap::Parser;
 use lazy_static::lazy_static;
 use serenity::{
-    async_trait, framework::standard::StandardFramework, model::gateway::Ready, prelude::*, builder::CreateApplicationCommand,
+    async_trait, framework::standard::StandardFramework, model::{gateway::Ready, id::GuildId, prelude::interaction::{Interaction, InteractionResponseType}}, prelude::*, builder::CreateApplicationCommand,
 };
 use std::sync::RwLock;
+
+lazy_static! {
+    static ref CONF: RwLock<Config> = RwLock::new(Config::new());
+}
 
 struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
-    async fn ready(&self, _: Context, ready: Ready) {
-        println!("{:?} is connected!", ready.user.name);
+    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        if let Interaction::ApplicationCommand(command) = interaction {
+            println!("Received command interaction: {:#?}", command);
+
+             let content = match command.data.name.as_str() {
+                //  "add" => commands::ping::run(&command.data.options),
+                //  "id" => commands::id::run(&command.data.options),
+                //  "attachmentinput" => commands::attachmentinput::run(&command.data.options),
+                 _ => "not implemented :(".to_string(),
+             };
+
+            if let Err(why) = command
+                .create_interaction_response(&ctx.http, |response| {
+                    response
+                        .kind(InteractionResponseType::ChannelMessageWithSource)
+                        .interaction_response_data(|message| message.content(content))
+                })
+                .await
+            {
+                println!("Cannot respond to slash command: {}", why);
+            }
+        }
+    }
+
+    async fn ready(&self, ctx: Context, ready: Ready) {
+        println!("{} is connected!", ready.user.name);
+
+        let ids = CONF.read().as_deref().unwrap().get_command_guilds();
+        for id in ids {
+        let guild_id = GuildId(id.parse().expect("error parsing GuildID"));
+        let commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
+            commands
+                .create_application_command(|command| cp2020::add::register(command))
+                .create_application_command(|command| cp2020::init::register(command))
+                .create_application_command(|command| cp2020::pick_char::register(command))
+                .create_application_command(|command| cp2020::skill::register(command))
+        })
+        .await;
+    
+    
+        println!("I now have the following guild slash commands: {:#?}", commands);
+    }
+        // let guild_command = Command::create_global_application_command(&ctx.http, |command| {
+        //     commands::wonderful_command::register(command)
+        // })
+        // .await;
+
+        // println!("I created the following global slash command: {:#?}", guild_command);
     }
 }
 
@@ -42,9 +92,8 @@ struct Args {
     db_url: Option<String>,
 }
 
-lazy_static! {
-    static ref CONF: RwLock<Config> = RwLock::new(Config::new());
-}
+
+
 
 #[tokio::main]
 async fn main() {

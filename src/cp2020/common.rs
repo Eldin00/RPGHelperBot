@@ -1,4 +1,5 @@
 use rand::Rng;
+use serenity::model::application::command::Command;
 use sqlx::Row;
 
 use crate::dbinterface::DB_POOL;
@@ -26,27 +27,6 @@ pub struct Cp2020Character {
     pub skills: Vec<Cp2020Skill>,
 }
 
-// async fn add_character(interaction: Interaction, ctx: &Context) {
-//     let modal = interaction.application_command().unwrap()
-//     .create_interaction_response(&ctx.http, |resp| {
-//         resp.kind(InteractionResponseType::Modal)
-//             .interaction_response_data(|response| {
-//                 response.custom_id("add_character");
-//                 response.title("");
-//                 response.components(|a_rows| {
-//                     a_rows.create_action_row(|row| {
-//                         row.create_input_text(|input| {
-//                             input.custom_id("cname")
-//                             .style(InputTextStyle::Short)
-//                             .label("Name")
-//                             .required(true)
-//                         })
-//                     })
-//                 })
-//             })
-//     }).await;
-// }
-
 pub async fn get_active_character(serverid: &str, userid: &str) -> Option<i64> {
     if let Some(db) = DB_POOL.get() {
         let sql = "SELECT character_id FROM active_characters WHERE server_id = ? AND user_id = ?";
@@ -64,7 +44,7 @@ pub async fn get_active_character(serverid: &str, userid: &str) -> Option<i64> {
     None
 }
 
-async fn set_active_character(serverid: &str, userid: &str, characterid: i64) -> bool {
+pub async fn set_active_character(serverid: &str, userid: &str, characterid: i64) -> bool {
     if let Some(db) = DB_POOL.get() {
         let sql_del = "DELETE FROM active_characters WHERE server_id = ? AND user_id = ?";
         let sql_ins =
@@ -85,7 +65,7 @@ async fn set_active_character(serverid: &str, userid: &str, characterid: i64) ->
     false
 }
 
-async fn get_character_list(serverid: &str, userid: &str) -> Vec<Cp2020Character> {
+pub async fn get_character_list(serverid: &str, userid: &str) -> Vec<Cp2020Character> {
     let mut characters: Vec<Cp2020Character> = vec![];
     if let Some(db) = DB_POOL.get() {
         let sql = "SELECT id, character_name, role FROM cp2020.characters WHERE server_id = ? AND user_id = ? ORDER BY id ASC";

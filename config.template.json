@@ -1,5 +1,6 @@
 { 
     "token": "<token goes here or 'ENV' to get token from environment variable>",
     "prefix": "!",
-    "db_url": "<location of SQLite database goes here>"
+    "db_url": "<location of SQLite database goes here>",
+    "command_guilds": ["list of guild ID's to register slash commands with."]
 }
