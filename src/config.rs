@@ -5,6 +5,7 @@ pub mod config {
         token: Option<String>,
         prefix: Option<String>,
         db_url: Option<String>,
+        command_guilds: Option<Vec<String>>,
     }
 
     impl Config {
@@ -13,6 +14,7 @@ pub mod config {
                 token: None,
                 prefix: Some("!".to_string()),
                 db_url: None,
+                command_guilds: None,
             };
         }
 
@@ -53,6 +55,13 @@ pub mod config {
             }
         }
 
+        pub fn get_command_guilds(self: &Self) -> Vec<String> {
+            match &self.command_guilds {
+                Some(g) => return g.clone(),
+                None => return vec![],
+            };
+        }
+
         //set config values
         pub fn set_token(&mut self, token: &str) {
             self.token = Some(token.to_string());
@@ -65,5 +74,10 @@ pub mod config {
         pub fn set_db_url(&mut self, db: &str) {
             self.db_url = Some(db.to_string());
         }
+
+        pub fn set_command_guilds(&mut self, guilds: Vec<String>) {
+            self.command_guilds = Some(guilds);
+        }
+
     }
 }

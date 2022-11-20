@@ -148,8 +148,6 @@ async fn cp_skill(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
 #[command] //need to add a way to input a character.
 async fn cp_add_char(ctx: &Context, msg: &Message, mut _args: Args) -> CommandResult {
-
-   
     let mut result = "Not yet implemented".to_string();
     while let Ok(a) = _args.single::<String>() {
         result = result + "\n" + a.as_str();
@@ -214,6 +212,31 @@ async fn cp_pick_char(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
         println!("Error sending message: {:?}", why);
     }
     Ok(())
+}
+
+async fn add_character(interaction: Interaction, ctx: &Context) {
+    let modal = interaction
+        .application_command()
+        .unwrap()
+        .create_interaction_response(&ctx.http, |resp| {
+            resp.kind(InteractionResponseType::Modal)
+                .interaction_response_data(|response| {
+                    response.custom_id("add_character");
+                    response.title("");
+                    response.components(|a_rows| {
+                        a_rows.create_action_row(|row| {
+                            row.create_input_text(|input| {
+                                input
+                                    .custom_id("cname")
+                                    .style(InputTextStyle::Short)
+                                    .label("Name")
+                                    .required(true)
+                            })
+                        })
+                    })
+                })
+        })
+        .await;
 }
 
 async fn get_active_character(serverid: &str, userid: &str) -> Option<i64> {
