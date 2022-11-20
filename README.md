@@ -14,10 +14,18 @@ This is a discord bot intended to assist with using Discord as a forum to play p
 
 ## Game specific commands
 ### Cyberpunk 2020
+#### Prefix commands
 * !cp_init - Roll initiative. If you have an active tracked character, apply initiative score and combat sense if applicable.
 * !cp_skill <skillname> - Make a skill roll. If you have an active tracked character, and specify a skill, the appropriate attribute and skill rank are applied.
 * !cp_pick_char <character> - If character is unspecified, it will show a list of your characters which are currently being tracked. If character name (or number from the displayed list) is specified, set that character as your active character.
 * !cp_add_char - Add a tracked character. Not yet fully implemented.
+
+#### slash commands
+* /add - Equivalent to !cp_add_char above.
+* /init - Equivalent to !cp_init above.
+* /pick_char - Equivalent to !cp_pick_char above.
+* /skill - Equivalent to !cp_skill above.
+
 
 ## Current status
 * Bot can connect to server and listen for commands. 
@@ -28,6 +36,7 @@ This is a discord bot intended to assist with using Discord as a forum to play p
 
 
 ## Immediate development goals:
-* Look into replacing serenity::framework with something like poise, to facilitate using slash commands instead of prefix commands. 
+* Remove the prefix commands which have slash command equivalents.
+* Look into converting the game-specific slash commands to sub-commands of a game-specific command (i.e. instead of /add something like /cp2020 add)
 * Need to implement adding a character to the bot.
-* Need to implement updating a tracked character.
+* Need to implement editing a tracked character.
