@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use serenity::{
-    builder::CreateApplicationCommand, model::prelude::application::interaction::Interaction,
+    builder::CreateApplicationCommand, model::prelude::{application::interaction::Interaction, command::CommandOptionType},
     prelude::*,
 };
 
@@ -16,6 +16,7 @@ pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicatio
                 .name("character")
                 .description("name or number of character to select")
                 .required(false)
+                .kind(CommandOptionType::String)
         })
 }
 

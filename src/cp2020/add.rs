@@ -9,6 +9,6 @@ pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicatio
     command.name("add").description("Add a character")
 }
 
-pub async fn run(interaction: Interaction, ctx: &Context) {
+pub async fn run(interaction: &Interaction, ctx: &Context) {
     //code to add a character will go here.
 }

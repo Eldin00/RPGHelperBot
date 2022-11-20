@@ -1,5 +1,5 @@
 use serenity::{
-    builder::CreateApplicationCommand, model::prelude::application::interaction::Interaction,
+    builder::CreateApplicationCommand, model::prelude::{application::interaction::Interaction, command::CommandOptionType},
     prelude::*,
 };
 
@@ -14,6 +14,7 @@ pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicatio
                 .name("skill")
                 .description("Which skill to roll")
                 .required(true)
+                .kind(CommandOptionType::String)
         })
 }
 

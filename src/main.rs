@@ -26,26 +26,30 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if let Interaction::ApplicationCommand(command) = interaction {
-            println!("Received command interaction: {:#?}", command);
+        if let Interaction::ApplicationCommand(command) = interaction.clone() {
+            //println!("Received command interaction: {:#?}", command);
 
              let content = match command.data.name.as_str() {
-                //  "add" => commands::ping::run(&command.data.options),
+                  "add" => cp2020::add::run(&interaction, &ctx).await,
+                  "init" => cp2020::init::run(interaction, &ctx).await,
+                  "pick_char" => cp2020::pick_char::run(interaction, &ctx).await,
+                  "skill" => cp2020::skill::run(interaction, &ctx).await,
                 //  "id" => commands::id::run(&command.data.options),
                 //  "attachmentinput" => commands::attachmentinput::run(&command.data.options),
-                 _ => "not implemented :(".to_string(),
+                 _ => (),
              };
 
-            if let Err(why) = command
-                .create_interaction_response(&ctx.http, |response| {
-                    response
-                        .kind(InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content(content))
-                })
-                .await
-            {
-                println!("Cannot respond to slash command: {}", why);
-            }
+            println!("{:?}", content);
+            // if let Err(why) = command
+            //     .create_interaction_response(&ctx.http, |response| {
+            //         response
+            //             .kind(InteractionResponseType::ChannelMessageWithSource)
+            //             .interaction_response_data(|message| message.content(content))
+            //     })
+            //     .await
+            // {
+            //     println!("Cannot respond to slash command: {}", why);
+            // }
         }
     }
 
@@ -65,7 +69,7 @@ impl EventHandler for Handler {
         .await;
     
     
-        println!("I now have the following guild slash commands: {:#?}", commands);
+        println!("I now have the following guild slash commands: {:#?} on guild {:?}", commands, guild_id);
     }
         // let guild_command = Command::create_global_application_command(&ctx.http, |command| {
         //     commands::wonderful_command::register(command)
