@@ -1,5 +1,4 @@
 use rand::Rng;
-use serenity::model::application::command::Command;
 use sqlx::Row;
 
 use crate::dbinterface::DB_POOL;

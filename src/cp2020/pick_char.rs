@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use serenity::{
     builder::CreateApplicationCommand, model::prelude::{application::interaction::Interaction, command::CommandOptionType},
     prelude::*,

@@ -10,7 +10,6 @@ use serenity::{
                 component::InputTextStyle,
                 interaction::{Interaction, InteractionResponseType},
             },
-            command::*,
         },
     },
 };

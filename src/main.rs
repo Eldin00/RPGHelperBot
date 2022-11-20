@@ -13,7 +13,7 @@ use crate::dice_commands::dice_commands::GENERAL_GROUP;
 use clap::Parser;
 use lazy_static::lazy_static;
 use serenity::{
-    async_trait, framework::standard::StandardFramework, model::{gateway::Ready, id::GuildId, prelude::interaction::{Interaction, InteractionResponseType}}, prelude::*, builder::CreateApplicationCommand,
+    async_trait, framework::standard::StandardFramework, model::{gateway::Ready, id::GuildId, prelude::interaction::{Interaction}}, prelude::*, 
 };
 use std::sync::RwLock;
 
@@ -27,29 +27,13 @@ struct Handler;
 impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::ApplicationCommand(command) = interaction.clone() {
-            //println!("Received command interaction: {:#?}", command);
-
-             let content = match command.data.name.as_str() {
+             match command.data.name.as_str() {
                   "add" => cp2020::add::run(&interaction, &ctx).await,
                   "init" => cp2020::init::run(interaction, &ctx).await,
                   "pick_char" => cp2020::pick_char::run(interaction, &ctx).await,
                   "skill" => cp2020::skill::run(interaction, &ctx).await,
-                //  "id" => commands::id::run(&command.data.options),
-                //  "attachmentinput" => commands::attachmentinput::run(&command.data.options),
                  _ => (),
              };
-
-            println!("{:?}", content);
-            // if let Err(why) = command
-            //     .create_interaction_response(&ctx.http, |response| {
-            //         response
-            //             .kind(InteractionResponseType::ChannelMessageWithSource)
-            //             .interaction_response_data(|message| message.content(content))
-            //     })
-            //     .await
-            // {
-            //     println!("Cannot respond to slash command: {}", why);
-            // }
         }
     }
 
@@ -71,12 +55,7 @@ impl EventHandler for Handler {
     
         println!("I now have the following guild slash commands: {:#?} on guild {:?}", commands, guild_id);
     }
-        // let guild_command = Command::create_global_application_command(&ctx.http, |command| {
-        //     commands::wonderful_command::register(command)
-        // })
-        // .await;
 
-        // println!("I created the following global slash command: {:#?}", guild_command);
     }
 }
 
