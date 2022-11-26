@@ -5,13 +5,13 @@ use serenity::{
     futures::TryStreamExt,
     model::{
         channel::Message,
-        prelude::{
-            application::{
-                component::InputTextStyle,
-                interaction::{Interaction, InteractionResponseType},
+        //prelude::{
+            //application::{
+                //component::InputTextStyle,
+                //interaction//::{Interaction, InteractionResponseType},
             },
-        },
-    },
+        //},
+    //},
 };
 use sqlx::Row;
 
@@ -213,30 +213,30 @@ async fn cp_pick_char(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
     Ok(())
 }
 
-async fn add_character(interaction: Interaction, ctx: &Context) {
-    let modal = interaction
-        .application_command()
-        .unwrap()
-        .create_interaction_response(&ctx.http, |resp| {
-            resp.kind(InteractionResponseType::Modal)
-                .interaction_response_data(|response| {
-                    response.custom_id("add_character");
-                    response.title("");
-                    response.components(|a_rows| {
-                        a_rows.create_action_row(|row| {
-                            row.create_input_text(|input| {
-                                input
-                                    .custom_id("cname")
-                                    .style(InputTextStyle::Short)
-                                    .label("Name")
-                                    .required(true)
-                            })
-                        })
-                    })
-                })
-        })
-        .await;
-}
+// async fn add_character(interaction: Interaction, ctx: &Context) {
+//     let modal = interaction
+//         .application_command()
+//         .unwrap()
+//         .create_interaction_response(&ctx.http, |resp| {
+//             resp.kind(InteractionResponseType::Modal)
+//                 .interaction_response_data(|response| {
+//                     response.custom_id("add_character");
+//                     response.title("");
+//                     response.components(|a_rows| {
+//                         a_rows.create_action_row(|row| {
+//                             row.create_input_text(|input| {
+//                                 input
+//                                     .custom_id("cname")
+//                                     .style(InputTextStyle::Short)
+//                                     .label("Name")
+//                                     .required(true)
+//                             })
+//                         })
+//                     })
+//                 })
+//         })
+//         .await;
+// }
 
 async fn get_active_character(serverid: &str, userid: &str) -> Option<i64> {
     if let Some(db) = DB_POOL.get() {

@@ -11,6 +11,7 @@ use crate::config::config::Config;
 use crate::dice_commands::dice_commands::GENERAL_GROUP;
 
 use clap::Parser;
+use cp2020::common::cp2020_init;
 use lazy_static::lazy_static;
 use serenity::{
     async_trait, framework::standard::StandardFramework, model::{gateway::Ready, id::GuildId, prelude::interaction::{Interaction}}, prelude::*, 
@@ -75,9 +76,6 @@ struct Args {
     db_url: Option<String>,
 }
 
-
-
-
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
@@ -124,6 +122,8 @@ async fn main() {
     let token: String = CONF.read().as_deref().unwrap().get_token();
 
     dbinterface::init_db().await;
+
+    cp2020_init().await;
 
     let framework = StandardFramework::new()
         .configure(|c| {
