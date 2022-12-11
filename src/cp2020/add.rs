@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration, collections::HashMap};
 
 use serenity::{
     builder::CreateApplicationCommand,
@@ -12,7 +12,7 @@ use serenity::{
             InteractionResponseType, InteractionType,
         },
     },
-    prelude::*,
+    prelude::*, futures::stream::ForEach,
 };
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
@@ -30,7 +30,186 @@ pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicatio
 
 pub async fn run(interaction: &Interaction, ctx: &Context) {
     let (role, role_response) = ask_role(&interaction.clone(), ctx).await;
-    let message = role_response
+    let (skill_list, skill_list_response) = ask_skills(role_response.clone(), ctx).await;
+
+    // rsp.kind(InteractionResponseType::Modal)
+    //     .interaction_response_data(|response| {
+    //         response
+    //             .custom_id("InputChar")
+    //             .title("Input Character Details")
+    //             .components(|rows| {
+    //                 rows.create_action_row(|row1| {
+    //                     row1.create_input_text(|name_input| {
+    //                         name_input
+    //                             .custom_id("CharName")
+    //                             .style(InputTextStyle::Short)
+    //                             .label("Name")
+    //                             .required(true)
+    //                     })
+    //                 })
+
+    // if let Err(why) = message {
+    //     println!("Error displaying component: {:?}", why);
+    //     return;
+    // }
+
+    // let response = CollectModalInteraction::new(&ctx.shard)
+    //     .author_id(
+    //         interaction
+    //             .to_owned()
+    //             .application_command()
+    //             .unwrap()
+    //             .user
+    //             .id,
+    //     )
+    //     .timeout(Duration::from_secs(3600))
+    //     .await;
+
+    // if response.is_none() {
+    //     println!("Error processing response");
+    //     return;
+    // }
+    // let response = response.unwrap();
+
+    // let collected = response
+    //     .data
+    //     .components
+    //     .to_owned()
+    //     .into_iter()
+    //     .flat_map(|x| x.to_owned().components)
+    //     .collect::<Vec<ActionRowComponent>>();
+
+    // let data = collected
+    //     .to_owned()
+    //     .iter()
+    //     .map(|x| match x {
+    //         ActionRowComponent::InputText(inp) => {
+    //             if inp.to_owned().value == "" {
+    //                 return "-".to_string();
+    //             } else {
+    //                 inp.to_owned().value
+    //             }
+    //         }
+    //         ActionRowComponent::SelectMenu(inp) => inp.to_owned().values[0].to_string(),
+    //         _ => format!("No match!"),
+    //     })
+    //     .collect::<Vec<String>>();
+}
+
+async fn ask_role(
+    interaction: &Interaction,
+    ctx: &Context,
+) -> (String, Arc<MessageComponentInteraction>) {
+    let _message = interaction
+        .to_owned()
+        .application_command()
+        .unwrap()
+        .create_interaction_response(&ctx.http, |rsp| {
+            rsp.kind(InteractionResponseType::ChannelMessageWithSource)
+                .interaction_response_data(|response| {
+                    response
+                        .custom_id("InputChar")
+                        .title("Input Character Details")
+                        .components(|rows| {
+                            rows.create_action_row(|row1| {
+                                row1.create_select_menu(|role_menu| {
+                                    role_menu
+                                        .custom_id("role")
+                                        .placeholder("Role")
+                                        .max_values(1)
+                                        .min_values(1)
+                                        .options(|options| {
+                                            options.create_option(|opt| {
+                                                opt.value("Rocker").label("Rocker")
+                                            });
+                                            options.create_option(|opt| {
+                                                opt.value("Solo").label("Solo")
+                                            });
+                                            options.create_option(|opt| {
+                                                opt.value("Netrunner").label("Netrunner")
+                                            });
+                                            options.create_option(|opt| {
+                                                opt.value("Techie").label("Techie")
+                                            });
+                                            options.create_option(|opt| {
+                                                opt.value("Medtechie").label("Medtechie")
+                                            });
+                                            options.create_option(|opt| {
+                                                opt.value("Media").label("Media")
+                                            });
+                                            options
+                                                .create_option(|opt| opt.value("Cop").label("Cop"));
+                                            options.create_option(|opt| {
+                                                opt.value("Corporate").label("Corporate")
+                                            });
+                                            options.create_option(|opt| {
+                                                opt.value("Fixer").label("Fixer")
+                                            });
+                                            options.create_option(|opt| {
+                                                opt.value("Nomad").label("Nomad")
+                                            });
+                                            options
+                                        })
+                                })
+                            })
+                            .create_action_row(|row2| {
+                                row2.create_button(|submit_role| {
+                                    submit_role
+                                        .custom_id("SubRoleBtn")
+                                        .label("Submit")
+                                        .style(ButtonStyle::Primary)
+                                })
+                            })
+                        })
+                })
+        })
+        .await;
+
+    let mut response_data: Vec<String> = vec![];
+
+    loop {
+        let response = CollectComponentInteraction::new(&ctx.shard)
+            .author_id(
+                interaction
+                    .to_owned()
+                    .application_command()
+                    .unwrap()
+                    .user
+                    .id,
+            )
+            .timeout(Duration::from_secs(600))
+            .await;
+
+        if response.is_none() {
+            println!("Error processing response");
+        }
+        let response = response.unwrap();
+
+        if response.data.custom_id == "SubRoleBtn" && response_data.len() > 0 {
+            println!("Submit: {:?}", response_data[0].clone());
+            return (response_data[0].to_string(), response);
+        } else if response.data.custom_id != "SubRoleBtn" {
+            response_data = response.data.values.clone();
+            println!("Data: {:?}", response_data);
+        }
+
+        if let Err(why) = response
+            .create_interaction_response(&ctx.http, |rsp| {
+                rsp.kind(InteractionResponseType::ChannelMessageWithSource)
+                    .interaction_response_data(|msg| msg.content(format!("{:?}", response_data)))
+            })
+            .await
+        {
+            println!("Error sending response: {:?}", why);
+        }
+    }
+}
+
+async fn ask_skills(
+    interaction: Arc<MessageComponentInteraction>,
+    ctx: &Context,
+) -> (Vec<String>, Arc<MessageComponentInteraction>) {
+    let _message = interaction
         .to_owned()
         .create_interaction_response(&ctx.http, |rsp| {
             rsp.kind(InteractionResponseType::ChannelMessageWithSource)
@@ -335,188 +514,16 @@ pub async fn run(interaction: &Interaction, ctx: &Context) {
                             })
                         })
                 })
-
-            // rsp.kind(InteractionResponseType::Modal)
-            //     .interaction_response_data(|response| {
-            //         response
-            //             .custom_id("InputChar")
-            //             .title("Input Character Details")
-            //             .components(|rows| {
-            //                 rows.create_action_row(|row1| {
-            //                     row1.create_input_text(|name_input| {
-            //                         name_input
-            //                             .custom_id("CharName")
-            //                             .style(InputTextStyle::Short)
-            //                             .label("Name")
-            //                             .required(true)
-            //                     })
-            //                 })
         })
         .await;
 
-    if let Err(why) = message {
-        println!("Error displaying component: {:?}", why);
-        return;
-    }
-
-    let mut found: bool = false;
-    while !found {
-        let response1 = CollectComponentInteraction::new(&ctx.shard)
-            .author_id(
-                interaction
-                    .to_owned()
-                    .application_command()
-                    .unwrap()
-                    .user
-                    .id,
-            )
-            .timeout(Duration::from_secs(600))
-            .await;
-
-        if response1.is_none() {
-            println!("Error processing response");
-            return;
-        }
-        let response1 = response1.unwrap();
-        let mut response1_data: Vec<String> = vec![];
-
-        if response1.data.custom_id == "SubSkillsBtn" {
-            found = true;
-        } else {
-            response1_data = response1.data.values.clone();
-        }
-        // let response = CollectModalInteraction::new(&ctx.shard)
-        //     .author_id(
-        //         interaction
-        //             .to_owned()
-        //             .application_command()
-        //             .unwrap()
-        //             .user
-        //             .id,
-        //     )
-        //     .timeout(Duration::from_secs(3600))
-        //     .await;
-
-        // if response.is_none() {
-        //     println!("Error processing response");
-        //     return;
-        // }
-        // let response = response.unwrap();
-
-        // let collected = response
-        //     .data
-        //     .components
-        //     .to_owned()
-        //     .into_iter()
-        //     .flat_map(|x| x.to_owned().components)
-        //     .collect::<Vec<ActionRowComponent>>();
-
-        // let data = collected
-        //     .to_owned()
-        //     .iter()
-        //     .map(|x| match x {
-        //         ActionRowComponent::InputText(inp) => {
-        //             if inp.to_owned().value == "" {
-        //                 return "-".to_string();
-        //             } else {
-        //                 inp.to_owned().value
-        //             }
-        //         }
-        //         ActionRowComponent::SelectMenu(inp) => inp.to_owned().values[0].to_string(),
-        //         _ => format!("No match!"),
-        //     })
-        //     .collect::<Vec<String>>();
-
-        if let Err(why) = response1
-            .create_interaction_response(&ctx.http, |rsp| {
-                rsp.kind(InteractionResponseType::ChannelMessageWithSource)
-                    .interaction_response_data(|msg| msg.content(format!("{:?}", response1_data)))
-            })
-            .await
-        {
-            println!("Error sending response: {:?}", why);
-        }
-    }
-}
-
-async fn ask_role(
-    interaction: &Interaction,
-    ctx: &Context,
-) -> (String, Arc<MessageComponentInteraction>) {
-    let _message = interaction
-        .to_owned()
-        .application_command()
-        .unwrap()
-        .create_interaction_response(&ctx.http, |rsp| {
-            rsp.kind(InteractionResponseType::ChannelMessageWithSource)
-                .interaction_response_data(|response| {
-                    response
-                        .custom_id("InputChar")
-                        .title("Input Character Details")
-                        .components(|rows| {
-                            rows.create_action_row(|row1| {
-                                row1.create_select_menu(|role_menu| {
-                                    role_menu
-                                        .custom_id("role")
-                                        .placeholder("Role")
-                                        .max_values(1)
-                                        .min_values(1)
-                                        .options(|options| {
-                                            options.create_option(|opt| {
-                                                opt.value("Rocker").label("Rocker")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Solo").label("Solo")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Netrunner").label("Netrunner")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Techie").label("Techie")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Medtechie").label("Medtechie")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Media").label("Media")
-                                            });
-                                            options
-                                                .create_option(|opt| opt.value("Cop").label("Cop"));
-                                            options.create_option(|opt| {
-                                                opt.value("Corporate").label("Corporate")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Fixer").label("Fixer")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Nomad").label("Nomad")
-                                            });
-                                            options
-                                        })
-                                })
-                            })
-                            .create_action_row(|row2| {
-                                row2.create_button(|submit_role| {
-                                    submit_role
-                                        .custom_id("SubRoleBtn")
-                                        .label("Submit")
-                                        .style(ButtonStyle::Primary)
-                                })
-                            })
-                        })
-                })
-        })
-        .await;
-
-    let mut response_data: Vec<String> = vec![];
+    let mut response_data: HashMap<String, Vec<String>> = HashMap::new();
 
     loop {
         let response = CollectComponentInteraction::new(&ctx.shard)
             .author_id(
                 interaction
                     .to_owned()
-                    .application_command()
-                    .unwrap()
                     .user
                     .id,
             )
@@ -527,15 +534,20 @@ async fn ask_role(
             println!("Error processing response");
         }
         let response = response.unwrap();
+        
 
-        if response.data.custom_id == "SubRoleBtn" && response_data.len() > 0 {
-            println!("Submit: {:?}", response_data[0].clone());
-            return (response_data[0].to_string(), response);
-        } else if response.data.custom_id != "SubRoleBtn" {
-            response_data = response.data.values.clone();
-            println!("Data: {:?}", response_data);
+        if response.data.custom_id == "SubSkillsBtn" {
+            println!("Submit: {:?}", response_data.clone());
+            let mut skill_list: Vec<String> = vec![];
+            for k in response_data.keys() {
+                skill_list.append(response_data[k].clone().as_mut());
+            }
+            println!("skills: {:?}", skill_list);
+            return (skill_list, response);
+        } else if response.data.custom_id != "SubSkillsBtn" {
+            println!("Data: {:?}", response.data.values.clone());
+            response_data.insert(response.data.custom_id.to_string(), response.data.values.clone());
         }
-
         if let Err(why) = response
             .create_interaction_response(&ctx.http, |rsp| {
                 rsp.kind(InteractionResponseType::ChannelMessageWithSource)
@@ -546,4 +558,5 @@ async fn ask_role(
             println!("Error sending response: {:?}", why);
         }
     }
+
 }
