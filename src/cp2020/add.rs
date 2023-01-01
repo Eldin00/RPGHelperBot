@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration, collections::HashMap};
+use std::{sync::Arc, time::Duration, collections::HashMap, vec};
 
 use serenity::{
     builder::CreateApplicationCommand,
@@ -9,11 +9,13 @@ use serenity::{
         component::{ActionRowComponent, ButtonStyle, InputTextStyle},
         interaction::{
             message_component::{MessageComponentInteraction, MessageComponentInteractionData},
-            InteractionResponseType, InteractionType,
+            InteractionResponseType, InteractionType, modal::ModalSubmitInteraction,
         },
     },
     prelude::*, futures::stream::ForEach,
 };
+
+use crate::cp2020::skill;
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
     command
@@ -30,70 +32,16 @@ pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicatio
 
 pub async fn run(interaction: &Interaction, ctx: &Context) {
     let (role, role_response) = ask_role(&interaction.clone(), ctx).await;
-    let (skill_list, skill_list_response) = ask_skills(role_response.clone(), ctx).await;
+    let (mut skill_list, skill_list_response) = ask_skills(role_response.clone(), ctx).await;
+    let (ma, ex, ot) = (skill_list.contains(&String::from("Martial Art")), skill_list.contains(&String::from("Expert")), skill_list.contains(&String::from("Other")));
+    if ma || ex || ot {
+        let mut more_skills = ask_more_skills(skill_list_response.clone(), ctx, ma, ex, ot).await;
+        skill_list.append(&mut more_skills);
+    }
 
-    // rsp.kind(InteractionResponseType::Modal)
-    //     .interaction_response_data(|response| {
-    //         response
-    //             .custom_id("InputChar")
-    //             .title("Input Character Details")
-    //             .components(|rows| {
-    //                 rows.create_action_row(|row1| {
-    //                     row1.create_input_text(|name_input| {
-    //                         name_input
-    //                             .custom_id("CharName")
-    //                             .style(InputTextStyle::Short)
-    //                             .label("Name")
-    //                             .required(true)
-    //                     })
-    //                 })
 
-    // if let Err(why) = message {
-    //     println!("Error displaying component: {:?}", why);
-    //     return;
-    // }
+    println!("USER ENTERED:\nRole: {}\nSkills: {:?}", role, skill_list);
 
-    // let response = CollectModalInteraction::new(&ctx.shard)
-    //     .author_id(
-    //         interaction
-    //             .to_owned()
-    //             .application_command()
-    //             .unwrap()
-    //             .user
-    //             .id,
-    //     )
-    //     .timeout(Duration::from_secs(3600))
-    //     .await;
-
-    // if response.is_none() {
-    //     println!("Error processing response");
-    //     return;
-    // }
-    // let response = response.unwrap();
-
-    // let collected = response
-    //     .data
-    //     .components
-    //     .to_owned()
-    //     .into_iter()
-    //     .flat_map(|x| x.to_owned().components)
-    //     .collect::<Vec<ActionRowComponent>>();
-
-    // let data = collected
-    //     .to_owned()
-    //     .iter()
-    //     .map(|x| match x {
-    //         ActionRowComponent::InputText(inp) => {
-    //             if inp.to_owned().value == "" {
-    //                 return "-".to_string();
-    //             } else {
-    //                 inp.to_owned().value
-    //             }
-    //         }
-    //         ActionRowComponent::SelectMenu(inp) => inp.to_owned().values[0].to_string(),
-    //         _ => format!("No match!"),
-    //     })
-    //     .collect::<Vec<String>>();
 }
 
 async fn ask_role(
@@ -558,5 +506,94 @@ async fn ask_skills(
             println!("Error sending response: {:?}", why);
         }
     }
+
+}
+
+async fn ask_more_skills(interaction: Arc<MessageComponentInteraction>, ctx: &Context, m_art: bool, exp: bool, other: bool) -> Vec<String>
+{
+    let _message = interaction
+    .to_owned()
+    .create_interaction_response(&ctx.http, |rsp| {
+        rsp.kind(InteractionResponseType::Modal)
+        .interaction_response_data(|response| {
+            response
+                .custom_id("MoreSkillsInput")
+                .title("Some skills need further specification. Please enter details below.")
+                .components(|rows| {
+                    if m_art {
+                        rows.create_action_row(|mrow| {
+                            mrow.create_input_text(|m_art_input| {
+                                m_art_input
+                                    .custom_id("MartialArts")
+                                    .style(InputTextStyle::Paragraph)
+                                    .label("Martial Arts, enter one per line")
+                                    .required(true)  
+                            })
+                        });
+                    }
+                    if exp {
+                        rows.create_action_row(|erow| {
+                            erow.create_input_text(|expert_input| {
+                                expert_input
+                                    .custom_id("Expert")
+                                    .style(InputTextStyle::Paragraph)
+                                    .label("Expert, enter one per line")
+                                    .required(true)  
+                            })
+                        });
+                    }
+                    if other {
+                        rows.create_action_row(|orow| {
+                            orow.create_input_text(|other_input| {
+                                other_input
+                                    .custom_id("Other")
+                                    .style(InputTextStyle::Paragraph)
+                                    .label("Other skills, enter as skill:attribute, one per line")
+                                    .required(true)  
+                            })
+                        });
+                    }
+                    rows
+               })
+        })
+    }).await;
+
+    let response = CollectModalInteraction::new(&ctx.shard)
+        .author_id(
+            interaction
+                .to_owned()
+                .user
+                .id,
+        )
+        .timeout(Duration::from_secs(3600))
+        .await;
+
+    let rsp = response.clone().unwrap();
+
+    let collected = rsp
+        .data
+        .components
+        .to_owned()
+        .into_iter()
+        .flat_map(|x| x.to_owned().components)
+        .collect::<Vec<ActionRowComponent>>();
+
+    let data = collected
+        .to_owned()
+        .iter()
+        .map(|x| match x {
+            ActionRowComponent::InputText(inp) => {
+                if inp.to_owned().value == "" {
+                    "-".to_string()
+                } else {
+                    inp.to_owned().value
+                }
+            }
+            ActionRowComponent::SelectMenu(inp) => inp.to_owned().values[0].to_string(),
+            _ => format!("No match!"),
+        })
+        .collect::<Vec<String>>();
+
+        return data;
 
 }
