@@ -15,7 +15,7 @@ use serenity::{
     prelude::*, futures::stream::ForEach,
 };
 
-use crate::cp2020::skill;
+//use crate::cp2020::skill;
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
     command
@@ -33,7 +33,8 @@ pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicatio
 pub async fn run(interaction: &Interaction, ctx: &Context) {
     let (role, role_response) = ask_role(&interaction.clone(), ctx).await;
     let (mut skill_list, skill_list_response) = ask_skills(role_response.clone(), ctx).await;
-    let (ma, ex, ot) = (skill_list.contains(&String::from("Martial Art")), skill_list.contains(&String::from("Expert")), skill_list.contains(&String::from("Other")));
+    //let (ma, ex, ot) = (skill_list.contains(&String::from("Martial Art")), skill_list.contains(&String::from("Expert")), skill_list.contains(&String::from("Other")));
+    let (ma, ex, ot) = (skill_list.iter().any(|i| i.eq_ignore_ascii_case(&String::from("Martial Art"))),  skill_list.iter().any(|i| i.eq_ignore_ascii_case(&String::from("Expert"))),  skill_list.iter().any(|i| i.eq_ignore_ascii_case(&String::from("Other"))));
     if ma || ex || ot {
         let mut more_skills = ask_more_skills(skill_list_response.clone(), ctx, ma, ex, ot).await;
         skill_list.append(&mut more_skills);
@@ -108,7 +109,7 @@ async fn ask_role(
                                         .style(ButtonStyle::Primary)
                                 })
                             })
-                        })
+                        }).ephemeral(true)
                 })
         })
         .await;
@@ -135,6 +136,7 @@ async fn ask_role(
 
         if response.data.custom_id == "SubRoleBtn" && response_data.len() > 0 {
             println!("Submit: {:?}", response_data[0].clone());
+            _ = response.delete_original_interaction_response(ctx).await;
             return (response_data[0].to_string(), response);
         } else if response.data.custom_id != "SubRoleBtn" {
             response_data = response.data.values.clone();
@@ -144,7 +146,7 @@ async fn ask_role(
         if let Err(why) = response
             .create_interaction_response(&ctx.http, |rsp| {
                 rsp.kind(InteractionResponseType::ChannelMessageWithSource)
-                    .interaction_response_data(|msg| msg.content(format!("{:?}", response_data)))
+                    .interaction_response_data(|msg| msg.content(format!("{:?}", response_data)).ephemeral(true))
             })
             .await
         {
@@ -206,6 +208,9 @@ async fn ask_skills(
                                             });
                                             options.create_option(|opt| {
                                                 opt.value("Streetwise").label("Streetwise")
+                                            });
+                                            options.create_option(|opt| {
+                                                opt.value("Other").label("Other")
                                             });
                                             options
                                         })
@@ -460,7 +465,7 @@ async fn ask_skills(
                                         .style(ButtonStyle::Primary)
                                 })
                             })
-                        })
+                        }).ephemeral(true)
                 })
         })
         .await;
@@ -499,7 +504,7 @@ async fn ask_skills(
         if let Err(why) = response
             .create_interaction_response(&ctx.http, |rsp| {
                 rsp.kind(InteractionResponseType::ChannelMessageWithSource)
-                    .interaction_response_data(|msg| msg.content(format!("{:?}", response_data)))
+                    .interaction_response_data(|msg| msg.content(format!("{:?}", response_data)).ephemeral(true))
             })
             .await
         {
@@ -554,7 +559,7 @@ async fn ask_more_skills(interaction: Arc<MessageComponentInteraction>, ctx: &Co
                         });
                     }
                     rows
-               })
+               }).ephemeral(true)
         })
     }).await;
 
