@@ -1,21 +1,21 @@
 use std::{sync::Arc, time::Duration, collections::HashMap, vec};
 
 use serenity::{
-    builder::CreateApplicationCommand,
+    builder::{CreateApplicationCommand, CreateSelectMenu},
     collector::{CollectComponentInteraction, CollectModalInteraction},
     model::prelude::{
         application::interaction::Interaction,
         command::CommandOptionType,
         component::{ActionRowComponent, ButtonStyle, InputTextStyle},
         interaction::{
-            message_component::{MessageComponentInteraction, MessageComponentInteractionData},
-            InteractionResponseType, InteractionType, modal::ModalSubmitInteraction,
+            message_component::{MessageComponentInteraction, /*MessageComponentInteractionData*/},
+            InteractionResponseType, /*InteractionType, modal::ModalSubmitInteraction,*/
         },
     },
-    prelude::*, futures::stream::ForEach,
+    prelude::*, /*futures::stream::ForEach,*/
 };
 
-//use crate::cp2020::skill;
+use super::common::Cp2020Skill;
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
     command
@@ -31,18 +31,17 @@ pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicatio
 }
 
 pub async fn run(interaction: &Interaction, ctx: &Context) {
+    let mut skill_list: Vec<Cp2020Skill> = vec![];
     let (role, role_response) = ask_role(&interaction.clone(), ctx).await;
-    let (mut skill_list, skill_list_response) = ask_skills(role_response.clone(), ctx).await;
-    //let (ma, ex, ot) = (skill_list.contains(&String::from("Martial Art")), skill_list.contains(&String::from("Expert")), skill_list.contains(&String::from("Other")));
-    let (ma, ex, ot) = (skill_list.iter().any(|i| i.eq_ignore_ascii_case(&String::from("Martial Art"))),  skill_list.iter().any(|i| i.eq_ignore_ascii_case(&String::from("Expert"))),  skill_list.iter().any(|i| i.eq_ignore_ascii_case(&String::from("Other"))));
-    if ma || ex || ot {
-        let mut more_skills = ask_more_skills(skill_list_response.clone(), ctx, ma, ex, ot).await;
-        skill_list.append(&mut more_skills);
+    let (mut skill_list, flags, skill_list_response) = ask_skills(role_response.clone(), ctx).await;
+    if flags > 0 {
+        let more_skills = ask_more_skills(skill_list_response.clone(), ctx, flags).await;
+        println!("{more_skills:?}\n");
+        //let tmp_skill: Vec<Cp2020Skill> = more_skills.into_iter().
+        // skill_list.append(&mut more_skills);
     }
 
-
     println!("USER ENTERED:\nRole: {}\nSkills: {:?}", role, skill_list);
-
 }
 
 async fn ask_role(
@@ -129,6 +128,7 @@ async fn ask_role(
             .timeout(Duration::from_secs(600))
             .await;
 
+
         if response.is_none() {
             println!("Error processing response");
         }
@@ -136,7 +136,6 @@ async fn ask_role(
 
         if response.data.custom_id == "SubRoleBtn" && response_data.len() > 0 {
             println!("Submit: {:?}", response_data[0].clone());
-            _ = response.delete_original_interaction_response(ctx).await;
             return (response_data[0].to_string(), response);
         } else if response.data.custom_id != "SubRoleBtn" {
             response_data = response.data.values.clone();
@@ -158,7 +157,15 @@ async fn ask_role(
 async fn ask_skills(
     interaction: Arc<MessageComponentInteraction>,
     ctx: &Context,
-) -> (Vec<String>, Arc<MessageComponentInteraction>) {
+) -> (Vec<Cp2020Skill>, i8, Arc<MessageComponentInteraction>) {
+    let attrskills = ["Personal Grooming", "Wardrobe & Style"];
+    let bodyskills = ["Endurance", "Strength Feat", "Swimming"];
+    let coolskills = ["Interrogation", "Intimidate", "Oratory", "Resist Torture/Drugs", "Streetwise"];
+    let empskills = ["Human Perception", "Interview", "Leadership", "Seduction", "Social", "Persuasion & Fast Talk", "Perform"];
+    let intskills = ["Accounting", "Anthropology", "Awareness/Notice", "Biology", "Botany","Chemistry","Composition","Diagnose Illness", "Education & Gen. Know.", "Expert", "Gamble", "Geology", "Hide/Evade", "History", "Language", "Library Search", "Mathematics", "Physics", "Programming", "Shadow/Track", "Stock Market", "System Knowledge", "Teaching", "Wilderness Survival", "Zoology"];
+    let refskills = ["Archery", "Athletics", "Brawling", "Dance", "Dodge & Escape", "Driving", "Fencing", "Handgun", "Heavy Weapons", "Martial Art", "Melee", "Motorcycle", "Operate Hvy. Machinery", "Pilot(Gyro)", "Pilot(Fixed Wing)", "Pilot(Dirigible)", "Pilot(Vect. Thrust)", "Rifle", "Stealth", "Submachinegun"];
+    let techskills = ["Aero Tech", "AV Tech", "Basic Tech", "Cryotank Operation", "Cyberdeck Design", "CyberTech", "Demolitions", "Disguise", "Electronics", "Elect. Security", "First Aid", "Forgery", "Gyro Tech", "Paint or Draw", "Photo & Film", "Pharmacuticals", "Pick Lock", "Pick Pocket", "Play Instrument", "Weaponsmith"];
+
     let _message = interaction
         .to_owned()
         .create_interaction_response(&ctx.http, |rsp| {
@@ -172,46 +179,31 @@ async fn ask_skills(
                                 row2.create_select_menu(|skills1_menu| {
                                     skills1_menu
                                         .custom_id("SkillsMenu1")
-                                        .placeholder("ATTR, BODY, & COOL/WILL skills")
+                                        .placeholder("ATTR, BODY, COOL/WILL & EMP skills")
                                         .min_values(0)
-                                        .max_values(10)
+                                        .max_values(17)
                                         .options(|options| {
-                                            options.create_option(|opt| {
-                                                opt.value("Personal Grooming")
-                                                    .label("Personal Grooming")
+                                            attrskills.into_iter().for_each(|s| {
+                                                options.create_option(|o| {
+                                                    o.value(s).label(s)
+                                                });
                                             });
-                                            options.create_option(|opt| {
-                                                opt.value("Wardrobe & Style")
-                                                    .label("Wardrobe & Style")
+                                            bodyskills.into_iter().for_each(|s| {
+                                                options.create_option(|o| {
+                                                    o.value(s).label(s)
+                                                });
                                             });
-                                            options.create_option(|opt| {
-                                                opt.value("Endurance").label("Endurance")
+                                            coolskills.into_iter().for_each(|s| {
+                                                options.create_option(|o| {
+                                                    o.value(s).label(s)
+                                                });
                                             });
-                                            options.create_option(|opt| {
-                                                opt.value("Strength Feat").label("Strength Feat")
+                                            empskills.into_iter().for_each(|s| {
+                                                options.create_option(|o| {
+                                                    o.value(s).label(s)
+                                                });
                                             });
-                                            options.create_option(|opt| {
-                                                opt.value("Swimming").label("Swimming")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Interrogation").label("Interrogation")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Intimidate").label("Intimidate")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Oratory").label("Oratory")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Resist Torture/Drugs")
-                                                    .label("Resist Torture/Drugs")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Streetwise").label("Streetwise")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Other").label("Other")
-                                            });
+                                            options.create_option(|o| {o.value("Other").label("Other")});
                                             options
                                         })
                                 })
@@ -224,85 +216,8 @@ async fn ask_skills(
                                         .min_values(0)
                                         .max_values(25)
                                         .options(|options| {
-                                            options.create_option(|opt| {
-                                                opt.value("Accounting").label("Accounting")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Anthropology").label("Anthropology")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Awareness/Notice")
-                                                    .label("Awareness/Notice")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Biology").label("Biology")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Botany").label("Botany")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Chemistry").label("Chemistry")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Composition").label("Composition")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Diagnose Illness")
-                                                    .label("Diagnose Illness")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Education & Gen Knowledge")
-                                                    .label("Education & Gen Knowledge")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Expert").label("Expert")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Gamble").label("Gamble")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Geology").label("Geology")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Hide/Evade").label("Hide/Evade")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("History").label("History")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Language").label("Language")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Library Search").label("Library Search")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Mathematics").label("Mathematics")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Physics").label("Physics")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Programming").label("Programming")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Shadow/Track").label("Shadow/Track")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Stock Market").label("Stock Market")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("System Knowledge")
-                                                    .label("System Knowledge")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Teaching").label("Teaching")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Wilderness Survival")
-                                                    .label("Wilderness Survival")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Zoology").label("Zoology")
+                                            intskills.into_iter().for_each(|s| {
+                                                options.create_option(|o| { o.value(s).label(s)});
                                             });
                                             options
                                         })
@@ -316,66 +231,8 @@ async fn ask_skills(
                                         .min_values(0)
                                         .max_values(19)
                                         .options(|options| {
-                                            options.create_option(|opt| {
-                                                opt.value("Archery").label("Archery")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Athletics").label("Athletics")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Brawling").label("Brawling")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Dance").label("Dance")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Dodge & Escape").label("Dodge & Escape")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Fencing").label("Driving")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Handgun").label("Handgun")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Heavy Weapons").label("Heavy Weapons")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Martial Art").label("Martial Art")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Melee").label("Melee")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Motorcycle").label("Motorcycle")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Operate Hvy Machinery")
-                                                    .label("Operate Hvy Machinery")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Pilot (Gyro)").label("Pilot (Gyro)")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Pilot (Fixed Wing)")
-                                                    .label("Pilot (Fixed Wing)")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Pilot (Dirigible)")
-                                                    .label("Pilot (Dirigible)")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Pilot (Vect Thrust)")
-                                                    .label("Pilot (Vect Thrust)")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Rifle").label("Rifle")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Stealth").label("Stealth")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Submachinegun").label("Submachinegun")
+                                            refskills.into_iter().for_each(|s| {
+                                                options.create_option(|o| {o.value(s).label(s)});
                                             });
                                             options
                                         })
@@ -389,69 +246,8 @@ async fn ask_skills(
                                         .min_values(0)
                                         .max_values(20)
                                         .options(|options| {
-                                            options.create_option(|opt| {
-                                                opt.value("Aero Tech").label("Aero Tech")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("AV Tech").label("AV Tech")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Basic Tech").label("Basic Tech")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Cryotank Operation")
-                                                    .label("Cryotank Operation")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Cyberdeck Design")
-                                                    .label("Cyberdeck Design")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Cyber Tech").label("Cyber Tech")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Demolitions").label("Demolitions")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Disguise").label("Disguise")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Electronics").label("Electronics")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Elec Security").label("Elec Security")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("First Aid").label("First Aid")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Forgery").label("Forgery")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Gyro Tech").label("Gyro Tech")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Paint or Draw").label("Paint or Draw")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Photo & Film").label("Photo & Film")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Pharmaceuticals")
-                                                    .label("Pharmaceuticals")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Pick Lock").label("Pick Lock")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Pick Pocket").label("Pick Pocket")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Play Instrument")
-                                                    .label("Play Instrument")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Weaponsmith").label("Weaponsmith")
+                                            techskills.into_iter().for_each(|s| {
+                                                options.create_option(|o| {o.value(s).label(s)});
                                             });
                                             options
                                         })
@@ -488,15 +284,31 @@ async fn ask_skills(
         }
         let response = response.unwrap();
         
-
+        let mut flags :i8 = 0;
+        const MA :i8 = 1;
+        const EX :i8 = 2;
+        const LA :i8 = 4;
+        const OT :i8 = 8;
         if response.data.custom_id == "SubSkillsBtn" {
             println!("Submit: {:?}", response_data.clone());
-            let mut skill_list: Vec<String> = vec![];
+            let mut skill_list: Vec<Cp2020Skill> = vec![];
             for k in response_data.keys() {
-                skill_list.append(response_data[k].clone().as_mut());
+                println!("{k}\n");
+                if k == "Martial Art" {flags = flags | MA}
+                else if k == "Expert" {flags = flags | EX}
+                else if k == "Language" {flags = flags | LA}
+                else if k == "Other" {flags = flags | OT}
+                else if attrskills.contains(&k.as_str()) {skill_list.push(Cp2020Skill { skill_name: k.clone(), skill_attribute: String::from("ATTR"), skill_value: 0 })}
+                else if bodyskills.contains(&k.as_str()) {skill_list.push(Cp2020Skill { skill_name: k.clone(), skill_attribute: String::from("BODY"), skill_value: 0 })}
+                else if coolskills.contains(&k.as_str()) {skill_list.push(Cp2020Skill { skill_name: k.clone(), skill_attribute: String::from("COOL/WILL"), skill_value: 0 })}
+                else if empskills.contains(&k.as_str()) {skill_list.push(Cp2020Skill { skill_name: k.clone(), skill_attribute: String::from("EMP"), skill_value: 0 })}
+                else if intskills.contains(&k.as_str()) {skill_list.push(Cp2020Skill { skill_name: k.clone(), skill_attribute: String::from("INT"), skill_value: 0 })}
+                else if refskills.contains(&k.as_str()) {skill_list.push(Cp2020Skill { skill_name: k.clone(), skill_attribute: String::from("REF"), skill_value: 0 })}
+                else if techskills.contains(&k.as_str()) {skill_list.push(Cp2020Skill { skill_name: k.clone(), skill_attribute: String::from("TECH"), skill_value: 0 })}
+                else {println!("{:?} is not ta valid skill!",k)}   
             }
             println!("skills: {:?}", skill_list);
-            return (skill_list, response);
+            return (skill_list, flags, response);
         } else if response.data.custom_id != "SubSkillsBtn" {
             println!("Data: {:?}", response.data.values.clone());
             response_data.insert(response.data.custom_id.to_string(), response.data.values.clone());
@@ -514,8 +326,13 @@ async fn ask_skills(
 
 }
 
-async fn ask_more_skills(interaction: Arc<MessageComponentInteraction>, ctx: &Context, m_art: bool, exp: bool, other: bool) -> Vec<String>
+async fn ask_more_skills(interaction: Arc<MessageComponentInteraction>, ctx: &Context, flags: i8) -> Vec<Cp2020Skill>
 {
+    const MA :i8 = 1;
+    const EX :i8 = 2;
+    const LA :i8 = 4;
+    const OT :i8 = 8;
+
     let _message = interaction
     .to_owned()
     .create_interaction_response(&ctx.http, |rsp| {
@@ -525,7 +342,7 @@ async fn ask_more_skills(interaction: Arc<MessageComponentInteraction>, ctx: &Co
                 .custom_id("MoreSkillsInput")
                 .title("Some skills need further specification. Please enter details below.")
                 .components(|rows| {
-                    if m_art {
+                    if (flags & MA) > 0 {
                         rows.create_action_row(|mrow| {
                             mrow.create_input_text(|m_art_input| {
                                 m_art_input
@@ -536,7 +353,7 @@ async fn ask_more_skills(interaction: Arc<MessageComponentInteraction>, ctx: &Co
                             })
                         });
                     }
-                    if exp {
+                    if (flags & EX) > 0 {
                         rows.create_action_row(|erow| {
                             erow.create_input_text(|expert_input| {
                                 expert_input
@@ -547,7 +364,18 @@ async fn ask_more_skills(interaction: Arc<MessageComponentInteraction>, ctx: &Co
                             })
                         });
                     }
-                    if other {
+                    if (flags & LA) > 0 {
+                        rows.create_action_row(|erow| {
+                            erow.create_input_text(|language_input| {
+                                language_input
+                                    .custom_id("Language")
+                                    .style(InputTextStyle::Paragraph)
+                                    .label("Language, enter one per line")
+                                    .required(true)  
+                            })
+                        });
+                    }
+                    if (flags & OT) > 0 {
                         rows.create_action_row(|orow| {
                             orow.create_input_text(|other_input| {
                                 other_input
@@ -583,22 +411,42 @@ async fn ask_more_skills(interaction: Arc<MessageComponentInteraction>, ctx: &Co
         .flat_map(|x| x.to_owned().components)
         .collect::<Vec<ActionRowComponent>>();
 
-    let data = collected
-        .to_owned()
-        .iter()
-        .map(|x| match x {
+    let mut skills: Vec<Cp2020Skill> = vec![];
+    collected.to_owned().iter().for_each(|x| {
+        match x {
             ActionRowComponent::InputText(inp) => {
-                if inp.to_owned().value == "" {
-                    "-".to_string()
-                } else {
-                    inp.to_owned().value
+                match inp.custom_id.as_str() {
+                    "MartialArts" => {
+                        for l in inp.value.lines() {
+                            if l != "" {skills.push(Cp2020Skill { skill_name: format!("Martial Art: {}",l), skill_attribute: String::from("REF"), skill_value: 0 });}
+                        }
+                    }
+                    "Expert" => {
+                        for l in inp.value.lines() {
+                            if l != "" {skills.push(Cp2020Skill { skill_name: format!("Expert: {}",l), skill_attribute: String::from("INT"), skill_value: 0 });}
+                        }
+                    }
+                    "Language" => {
+                        for l in inp.value.lines() {
+                            if l != "" {skills.push(Cp2020Skill { skill_name: format!("Language: {}",l), skill_attribute: String::from("INT"), skill_value: 0 });}
+                        }
+                    }
+                    "Other" => {
+                        for l in inp.value.lines() {
+                            if l != "" {
+                            let skill :Vec<&str> = l.split(':').into_iter().collect();
+                                if skill.len() == 2 {
+                                    skills.push(Cp2020Skill { skill_name: skill[0].to_string(), skill_attribute: skill[1].to_string(), skill_value: 0 })
+                                }
+                                else {println!("{l} was not a correctly formatted skill!")}
+                            }
+                        }
+                    }
+                    _ => {println!("Error! {} is not an expected skill type!", inp.custom_id);}
                 }
             }
-            ActionRowComponent::SelectMenu(inp) => inp.to_owned().values[0].to_string(),
-            _ => format!("No match!"),
-        })
-        .collect::<Vec<String>>();
-
-        return data;
-
+            _ => {println!("{:?}",x)}
+        }
+    });
+    skills
 }

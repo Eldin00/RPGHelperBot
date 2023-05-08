@@ -1,14 +1,16 @@
 use rand::Rng;
-                                                                                                                                                                                                                                                use sqlx::Row;
+use sqlx::Row;
 
 use crate::dbinterface::DB_POOL;
 
+#[derive(Debug)]
 pub struct Cp2020Skill {
     pub skill_name: String,
     pub skill_attribute: String,
     pub skill_value: u8,
 }
 
+#[derive(Debug)]
 pub struct Cp2020Character {
     pub id: i64,
     pub character_name: String,
