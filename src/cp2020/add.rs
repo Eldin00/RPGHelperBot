@@ -1,18 +1,18 @@
 use std::{sync::Arc, time::Duration, collections::HashMap, vec};
 
 use serenity::{
-    builder::{CreateApplicationCommand, CreateSelectMenu},
+    builder::{CreateApplicationCommand, },
     collector::{CollectComponentInteraction, CollectModalInteraction},
     model::prelude::{
         application::interaction::Interaction,
         command::CommandOptionType,
         component::{ActionRowComponent, ButtonStyle, InputTextStyle},
         interaction::{
-            message_component::{MessageComponentInteraction, /*MessageComponentInteractionData*/},
-            InteractionResponseType, /*InteractionType, modal::ModalSubmitInteraction,*/
+            message_component::{MessageComponentInteraction,},
+            InteractionResponseType, modal::ModalSubmitInteraction,
         },
     },
-    prelude::*, /*futures::stream::ForEach,*/
+    prelude::*, 
 };
 
 use super::common::Cp2020Skill;
@@ -31,14 +31,13 @@ pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicatio
 }
 
 pub async fn run(interaction: &Interaction, ctx: &Context) {
-    let mut skill_list: Vec<Cp2020Skill> = vec![];
     let (role, role_response) = ask_role(&interaction.clone(), ctx).await;
-    let (mut skill_list, flags, skill_list_response) = ask_skills(role_response.clone(), ctx).await;
+    let (stats, humanity, stats_response) = ask_stats(role_response.clone(), ctx).await;
+    let (mut skill_list, flags, skill_list_response) = ask_skills(stats_response.clone(), ctx).await;
     if flags > 0 {
-        let more_skills = ask_more_skills(skill_list_response.clone(), ctx, flags).await;
+        let mut more_skills = ask_more_skills(skill_list_response.clone(), ctx, flags).await;
+        skill_list.append(&mut more_skills);
         println!("{more_skills:?}\n");
-        //let tmp_skill: Vec<Cp2020Skill> = more_skills.into_iter().
-        // skill_list.append(&mut more_skills);
     }
 
     println!("USER ENTERED:\nRole: {}\nSkills: {:?}", role, skill_list);
@@ -154,8 +153,134 @@ async fn ask_role(
     }
 }
 
+async fn ask_stats(interaction: Arc<MessageComponentInteraction>, ctx: &Context) -> ( Vec<i8>, f32, Arc<ModalSubmitInteraction> ) {
+    let _message = interaction
+        .create_interaction_response(&ctx.http, |rsp| {
+            rsp.kind(InteractionResponseType::Modal)
+            .interaction_response_data(|response| {
+                response
+                .custom_id("stats_input")
+                .title("Input Stats")
+                .components(|rows| {
+                    rows.create_action_row(|srow| {
+                        srow.create_input_text(|stats_input| {
+                            stats_input
+                            .custom_id("StatLine")
+                            .style(InputTextStyle::Short)
+                            .label("Enter stats in this order, separated by spaces:\nINT REF TECH COOL ATTR LUCK MA BODY EMP")
+                            .required(true)
+                        })
+                    }).create_action_row(|irow| {
+                        irow.create_input_text(|stats_input| {
+                            stats_input
+                            .custom_id("InitBonus")
+                            .style(InputTextStyle::Short)
+                            .label("Enter your initiative modifier")
+                            .required(true)
+                        })
+                    }).create_action_row(|hrow| {
+                        hrow.create_input_text(|stats_input| {
+                            stats_input
+                            .custom_id("HumanityRow")
+                            .style(InputTextStyle::Short)
+                            .label("Enter your Humanity score")
+                            .required(true)
+                        })
+                    })
+                })
+            })
+        });
+
+    let response = CollectModalInteraction::new(&ctx.shard)
+    .author_id(
+        interaction
+            .to_owned()
+            .user
+            .id,
+    )
+    .timeout(Duration::from_secs(3600))
+    .await;
+
+    let rsp = response.clone().unwrap();
+
+    let collected = rsp
+        .data
+        .components
+        .to_owned()
+        .into_iter()
+        .flat_map(|x| x.to_owned().components)
+        .collect::<Vec<ActionRowComponent>>();
+
+    let mut stats: Vec<i8> = vec![];
+    let mut init: i8 = 0;
+    let mut humanity: f32 = 0.0;
+
+    collected.to_owned().iter().for_each(|x| {
+        match x {
+            ActionRowComponent::InputText(inp) => {
+                match inp.custom_id.as_str() {
+                    "StatsLine" => {
+                        for l in inp.value.lines() {
+                            if l != "" {
+                                let x: Vec<&str> = l.split(' ').into_iter().collect();
+                                if x.len() == 10 {
+                                    for i in x {
+                                        let stat = match i.parse::<i8>() {
+                                            Ok(n) => {n}
+                                            Err(x) => {
+                                                println!("{:?}\n{:?} is not a valid integer!", x, i);
+                                                -127
+                                            }
+                                        };
+                                        stats.push(stat);
+                                    }
+                                }
+                                else {
+                                    println!("{:?} is not a valid stats line!", l);
+                                }
+                            }
+                        }
+                    }
+                    "InitBonus" => {
+                        for l in inp.value.lines() {
+                            if l != "" {
+                                init = match l.parse::<i8>() {
+                                    Ok(n) => {n}
+                                    Err(x) => {
+                                        println!("{:?}\n{:?} is not a valid integer!", x, l);
+                                        -127
+                                    }
+                                };
+
+                            }
+                        }
+                    }
+                    "HumanityRow" => {
+                        for l in inp.value.lines() {
+                            if l != "" {
+                                humanity = match l.parse::<f32>() {
+                                    Ok(n) => {n}
+                                    Err(x) => {
+                                        println!("{:?}\n{:?} is not a valid value for humanity!", x, l);
+                                        0.0 
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    _ => {println!("Error! {} is not an expected stat input!", inp.custom_id);}
+                }
+            }
+            _ => {println!("{:?}",x)}
+        }
+    });
+    stats.push(init);
+    (stats, humanity, rsp)
+
+}
+
 async fn ask_skills(
-    interaction: Arc<MessageComponentInteraction>,
+    interaction: Arc<ModalSubmitInteraction>,
     ctx: &Context,
 ) -> (Vec<Cp2020Skill>, i8, Arc<MessageComponentInteraction>) {
     let attrskills = ["Personal Grooming", "Wardrobe & Style"];
@@ -334,7 +459,7 @@ async fn ask_more_skills(interaction: Arc<MessageComponentInteraction>, ctx: &Co
     const OT :i8 = 8;
 
     let _message = interaction
-    .to_owned()
+//    .to_owned()
     .create_interaction_response(&ctx.http, |rsp| {
         rsp.kind(InteractionResponseType::Modal)
         .interaction_response_data(|response| {
