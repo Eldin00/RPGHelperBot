@@ -15,6 +15,7 @@ use serenity::{
     prelude::*, 
 };
 
+
 use super::common::Cp2020Skill;
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
@@ -32,21 +33,29 @@ pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicatio
 
 pub async fn run(interaction: &Interaction, ctx: &Context) {
     let (role, role_response) = ask_role(&interaction.clone(), ctx).await;
-    let (stats, humanity, stats_response) = ask_stats(role_response.clone(), ctx).await;
+
+    let (_stats, _humanity, stats_response) = ask_stats(role_response.clone(), ctx).await;
+
     let (mut skill_list, flags, skill_list_response) = ask_skills(stats_response.clone(), ctx).await;
+
     if flags > 0 {
         let mut more_skills = ask_more_skills(skill_list_response.clone(), ctx, flags).await;
         skill_list.append(&mut more_skills);
         println!("{more_skills:?}\n");
     }
+    // TODO:
+    // Get values for special ability, and for each skill in skill_list from user.
+    // build Cp2020Character from role, stats, and skill_list.
+    // save built character.
 
-    println!("USER ENTERED:\nRole: {}\nSkills: {:?}", role, skill_list);
+    println!("USER ENTERED:\nRole: {role}\nSkills: {skill_list:?}");
 }
 
 async fn ask_role(
     interaction: &Interaction,
     ctx: &Context,
 ) -> (String, Arc<MessageComponentInteraction>) {
+    let roles = ["Rocker","Solo","Netrunner","Techie","MedTechie","Media","Cop","Corporate","Fixer","Nomad"];
     let _message = interaction
         .to_owned()
         .application_command()
@@ -66,34 +75,10 @@ async fn ask_role(
                                         .max_values(1)
                                         .min_values(1)
                                         .options(|options| {
-                                            options.create_option(|opt| {
-                                                opt.value("Rocker").label("Rocker")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Solo").label("Solo")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Netrunner").label("Netrunner")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Techie").label("Techie")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Medtechie").label("Medtechie")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Media").label("Media")
-                                            });
-                                            options
-                                                .create_option(|opt| opt.value("Cop").label("Cop"));
-                                            options.create_option(|opt| {
-                                                opt.value("Corporate").label("Corporate")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Fixer").label("Fixer")
-                                            });
-                                            options.create_option(|opt| {
-                                                opt.value("Nomad").label("Nomad")
+                                            roles.into_iter().for_each(|s| {
+                                                options.create_option(|o| {
+                                                    o.value(s).label(s)
+                                                });
                                             });
                                             options
                                         })
@@ -154,7 +139,8 @@ async fn ask_role(
 }
 
 async fn ask_stats(interaction: Arc<MessageComponentInteraction>, ctx: &Context) -> ( Vec<i8>, f32, Arc<ModalSubmitInteraction> ) {
-    let _message = interaction
+    //println!("Launched ask_stats function");
+    let message = interaction
         .create_interaction_response(&ctx.http, |rsp| {
             rsp.kind(InteractionResponseType::Modal)
             .interaction_response_data(|response| {
@@ -165,9 +151,9 @@ async fn ask_stats(interaction: Arc<MessageComponentInteraction>, ctx: &Context)
                     rows.create_action_row(|srow| {
                         srow.create_input_text(|stats_input| {
                             stats_input
-                            .custom_id("StatLine")
+                            .custom_id("StatsLine")
                             .style(InputTextStyle::Short)
-                            .label("Enter stats in this order, separated by spaces:\nINT REF TECH COOL ATTR LUCK MA BODY EMP")
+                            .label("Input\nINT REF TECH COOL ATTR LUCK MA BODY EMP")
                             .required(true)
                         })
                     }).create_action_row(|irow| {
@@ -189,8 +175,9 @@ async fn ask_stats(interaction: Arc<MessageComponentInteraction>, ctx: &Context)
                     })
                 })
             })
-        });
-
+        }).await;
+    
+    if message.is_err() {println!("results of creating modal: {message:?}");}
     let response = CollectModalInteraction::new(&ctx.shard)
     .author_id(
         interaction
@@ -221,6 +208,7 @@ async fn ask_stats(interaction: Arc<MessageComponentInteraction>, ctx: &Context)
                 match inp.custom_id.as_str() {
                     "StatsLine" => {
                         for l in inp.value.lines() {
+                            println!("xx{l}");
                             if l != "" {
                                 let x: Vec<&str> = l.split(' ').into_iter().collect();
                                 if x.len() == 10 {
@@ -236,7 +224,7 @@ async fn ask_stats(interaction: Arc<MessageComponentInteraction>, ctx: &Context)
                                     }
                                 }
                                 else {
-                                    println!("{:?} is not a valid stats line!", l);
+                                    println!("l: {:?}, x: {:?}, len: {} is not a valid stats line!",l,x,x.len());
                                 }
                             }
                         }
@@ -417,20 +405,21 @@ async fn ask_skills(
         if response.data.custom_id == "SubSkillsBtn" {
             println!("Submit: {:?}", response_data.clone());
             let mut skill_list: Vec<Cp2020Skill> = vec![];
-            for k in response_data.keys() {
-                println!("{k}\n");
-                if k == "Martial Art" {flags = flags | MA}
-                else if k == "Expert" {flags = flags | EX}
-                else if k == "Language" {flags = flags | LA}
-                else if k == "Other" {flags = flags | OT}
-                else if attrskills.contains(&k.as_str()) {skill_list.push(Cp2020Skill { skill_name: k.clone(), skill_attribute: String::from("ATTR"), skill_value: 0 })}
-                else if bodyskills.contains(&k.as_str()) {skill_list.push(Cp2020Skill { skill_name: k.clone(), skill_attribute: String::from("BODY"), skill_value: 0 })}
-                else if coolskills.contains(&k.as_str()) {skill_list.push(Cp2020Skill { skill_name: k.clone(), skill_attribute: String::from("COOL/WILL"), skill_value: 0 })}
-                else if empskills.contains(&k.as_str()) {skill_list.push(Cp2020Skill { skill_name: k.clone(), skill_attribute: String::from("EMP"), skill_value: 0 })}
-                else if intskills.contains(&k.as_str()) {skill_list.push(Cp2020Skill { skill_name: k.clone(), skill_attribute: String::from("INT"), skill_value: 0 })}
-                else if refskills.contains(&k.as_str()) {skill_list.push(Cp2020Skill { skill_name: k.clone(), skill_attribute: String::from("REF"), skill_value: 0 })}
-                else if techskills.contains(&k.as_str()) {skill_list.push(Cp2020Skill { skill_name: k.clone(), skill_attribute: String::from("TECH"), skill_value: 0 })}
-                else {println!("{:?} is not ta valid skill!",k)}   
+            for v in response_data.values() {
+                for s in v {
+                    if s == "Martial Art" {flags = flags | MA}
+                    else if s == "Expert" {flags = flags | EX}
+                    else if s == "Language" {flags = flags | LA}
+                    else if s == "Other" {flags = flags | OT}
+                    else if attrskills.contains(&s.as_str()) {skill_list.push(Cp2020Skill { skill_name: s.clone(), skill_attribute: String::from("ATTR"), skill_value: 0 })}
+                    else if bodyskills.contains(&s.as_str()) {skill_list.push(Cp2020Skill { skill_name: s.clone(), skill_attribute: String::from("BODY"), skill_value: 0 })}
+                    else if coolskills.contains(&s.as_str()) {skill_list.push(Cp2020Skill { skill_name: s.clone(), skill_attribute: String::from("COOL/WILL"), skill_value: 0 })}
+                    else if empskills.contains(&s.as_str()) {skill_list.push(Cp2020Skill { skill_name: s.clone(), skill_attribute: String::from("EMP"), skill_value: 0 })}
+                    else if intskills.contains(&s.as_str()) {skill_list.push(Cp2020Skill { skill_name: s.clone(), skill_attribute: String::from("INT"), skill_value: 0 })}
+                    else if refskills.contains(&s.as_str()) {skill_list.push(Cp2020Skill { skill_name: s.clone(), skill_attribute: String::from("REF"), skill_value: 0 })}
+                    else if techskills.contains(&s.as_str()) {skill_list.push(Cp2020Skill { skill_name: s.clone(), skill_attribute: String::from("TECH"), skill_value: 0 })}
+                    else {println!("{:?} is not ta valid skill!",s)}  
+                } 
             }
             println!("skills: {:?}", skill_list);
             return (skill_list, flags, response);
@@ -575,3 +564,6 @@ async fn ask_more_skills(interaction: Arc<MessageComponentInteraction>, ctx: &Co
     });
     skills
 }
+
+// TODO: Add function to get skill values.
+//async fn get_skill_values()
