@@ -75,7 +75,7 @@ pub mod config {
             self.db_url = Some(db.to_string());
         }
 
-        pub fn set_command_guilds(&mut self, guilds: Vec<String>) {
+        pub fn _set_command_guilds(&mut self, guilds: Vec<String>) {
             self.command_guilds = Some(guilds);
         }
 

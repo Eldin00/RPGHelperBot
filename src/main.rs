@@ -146,5 +146,5 @@ async fn main() {
     }
 
 
-    cp2020_functions::cp2020_init().await;
+    //cp2020_functions::cp2020_init().await;
 }

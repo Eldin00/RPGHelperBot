@@ -354,47 +354,47 @@ async fn get_skills(characterid: i64) -> Vec<Cp2020Skill> {
     skills
 }
 
-pub async fn cp2020_init() {
-    if let Some(db) = DB_POOL.get() {
-        let character_table = "CREATE TABLE IF NOT EXISTS cp2020.characters (
-                        id INTEGER primary key AUTOINCREMENT,
-                        server_id TEXT NOT NULL,
-                        user_id TEXT NOT NULL,
-                        character_name TEXT NOT NULL,
-                        role TEXT NOT NULL,
-                        inteligence INTEGER NOT NULL,
-                        reflex INTEGER NOT NULL,
-                        initiative INTEGER NOT NULL,
-                        tech INTEGER NOT NULL,
-                        cool INTEGER NOT NULL,
-                        attractiveness INTEGER NOT NULL,
-                        movement INTEGER NOT NULL,
-                        body INTEGER NOT NULL,
-                        empathy INTEGER NOT NULL,
-                        special_ability INTEGER NOT NULL
-                    )";
-        let character_index = "CREATE INDEX IF NOT EXISTS cp2020.character_user_server_channel ON cp2020.characters (server_id, user_id)";
-        let skill_table = "CREATE TABLE IF NOT EXISTS cp2020.skills (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        character_id INTEGER NOT NULL REFERENCES cp2020.characters (id) ON DELETE CASCADE ON UPDATE CASCADE,
-                        skill_name TEXT NOT NULL,
-                        skill_attribute TEXT NOT NULL,
-                        skill_value INTEGER NOT NULL
-                    )";
-        let skill_index =
-            "CREATE INDEX IF NOT EXISTS cp2020.skill_character_id ON cp2020.skills (character_id)";
-        let active_character_table = "CREATE TABLE IF NOT EXISTS cp2020.active_characters (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        user_id TEXT NOT NULL,
-                        server_id TEXT NOT NULL,
-                        character_id INTEGER NOT NULL REFERENCES cp2020.characters (id) ON DELETE CASCADE ON UPDATE CASCADE
-            )";
-        let active_character_index = "CREATE UNIQUE INDEX IF NOT EXISTS cp2020.active_character_unique_server_user ON cp2020.active_characters (server_id, user_id)";
-        _ = sqlx::query(character_table).execute(db).await;
-        _ = sqlx::query(character_index).execute(db).await;
-        _ = sqlx::query(skill_table).execute(db).await;
-        _ = sqlx::query(skill_index).execute(db).await;
-        _ = sqlx::query(active_character_table).execute(db).await;
-        _ = sqlx::query(active_character_index).execute(db).await;
-    }
-}
+// pub async fn cp2020_init() {
+//     if let Some(db) = DB_POOL.get() {
+//         let character_table = "CREATE TABLE IF NOT EXISTS cp2020.characters (
+//                         id INTEGER primary key AUTOINCREMENT,
+//                         server_id TEXT NOT NULL,
+//                         user_id TEXT NOT NULL,
+//                         character_name TEXT NOT NULL,
+//                         role TEXT NOT NULL,
+//                         inteligence INTEGER NOT NULL,
+//                         reflex INTEGER NOT NULL,
+//                         initiative INTEGER NOT NULL,
+//                         tech INTEGER NOT NULL,
+//                         cool INTEGER NOT NULL,
+//                         attractiveness INTEGER NOT NULL,
+//                         movement INTEGER NOT NULL,
+//                         body INTEGER NOT NULL,
+//                         empathy INTEGER NOT NULL,
+//                         special_ability INTEGER NOT NULL
+//                     )";
+//         let character_index = "CREATE INDEX IF NOT EXISTS cp2020.character_user_server_channel ON cp2020.characters (server_id, user_id)";
+//         let skill_table = "CREATE TABLE IF NOT EXISTS cp2020.skills (
+//                         id INTEGER PRIMARY KEY AUTOINCREMENT,
+//                         character_id INTEGER NOT NULL REFERENCES cp2020.characters (id) ON DELETE CASCADE ON UPDATE CASCADE,
+//                         skill_name TEXT NOT NULL,
+//                         skill_attribute TEXT NOT NULL,
+//                         skill_value INTEGER NOT NULL
+//                     )";
+//         let skill_index =
+//             "CREATE INDEX IF NOT EXISTS cp2020.skill_character_id ON cp2020.skills (character_id)";
+//         let active_character_table = "CREATE TABLE IF NOT EXISTS cp2020.active_characters (
+//                         id INTEGER PRIMARY KEY AUTOINCREMENT,
+//                         user_id TEXT NOT NULL,
+//                         server_id TEXT NOT NULL,
+//                         character_id INTEGER NOT NULL REFERENCES cp2020.characters (id) ON DELETE CASCADE ON UPDATE CASCADE
+//             )";
+//         let active_character_index = "CREATE UNIQUE INDEX IF NOT EXISTS cp2020.active_character_unique_server_user ON cp2020.active_characters (server_id, user_id)";
+//         _ = sqlx::query(character_table).execute(db).await;
+//         _ = sqlx::query(character_index).execute(db).await;
+//         _ = sqlx::query(skill_table).execute(db).await;
+//         _ = sqlx::query(skill_index).execute(db).await;
+//         _ = sqlx::query(active_character_table).execute(db).await;
+//         _ = sqlx::query(active_character_index).execute(db).await;
+//     }
+// }

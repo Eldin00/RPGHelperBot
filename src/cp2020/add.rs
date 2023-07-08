@@ -15,7 +15,6 @@ use serenity::{
     prelude::*, 
 };
 
-
 use super::common::Cp2020Skill;
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
@@ -115,6 +114,7 @@ async fn ask_role(
 
         if response.is_none() {
             println!("Error processing response");
+            continue;
         }
         let response = response.unwrap();
 
@@ -126,15 +126,15 @@ async fn ask_role(
             println!("Data: {:?}", response_data);
         }
 
-        if let Err(why) = response
-            .create_interaction_response(&ctx.http, |rsp| {
-                rsp.kind(InteractionResponseType::ChannelMessageWithSource)
-                    .interaction_response_data(|msg| msg.content(format!("{:?}", response_data)).ephemeral(true))
-            })
-            .await
-        {
-            println!("Error sending response: {:?}", why);
-        }
+        // if let Err(why) = response
+        //     .create_interaction_response(&ctx.http, |rsp| {
+        //         rsp.kind(InteractionResponseType::ChannelMessageWithSource)
+        //             .interaction_response_data(|msg| msg.content(format!("{:?}", response_data)).ephemeral(true))
+        //     })
+        //     .await
+        // {
+        //     println!("Error sending response: {:?}", why);
+        // }
     }
 }
 
@@ -208,10 +208,10 @@ async fn ask_stats(interaction: Arc<MessageComponentInteraction>, ctx: &Context)
                 match inp.custom_id.as_str() {
                     "StatsLine" => {
                         for l in inp.value.lines() {
-                            println!("xx{l}");
+                            println!("xx{l}xx");
                             if l != "" {
                                 let x: Vec<&str> = l.split(' ').into_iter().collect();
-                                if x.len() == 10 {
+                                if x.len() == 9 {
                                     for i in x {
                                         let stat = match i.parse::<i8>() {
                                             Ok(n) => {n}
@@ -270,7 +270,7 @@ async fn ask_stats(interaction: Arc<MessageComponentInteraction>, ctx: &Context)
 async fn ask_skills(
     interaction: Arc<ModalSubmitInteraction>,
     ctx: &Context,
-) -> (Vec<Cp2020Skill>, i8, Arc<MessageComponentInteraction>) {
+) -> (Vec<Cp2020Skill>, u8, Arc<MessageComponentInteraction>) {
     let attrskills = ["Personal Grooming", "Wardrobe & Style"];
     let bodyskills = ["Endurance", "Strength Feat", "Swimming"];
     let coolskills = ["Interrogation", "Intimidate", "Oratory", "Resist Torture/Drugs", "Streetwise"];
@@ -394,14 +394,15 @@ async fn ask_skills(
 
         if response.is_none() {
             println!("Error processing response");
+            continue;
         }
         let response = response.unwrap();
         
-        let mut flags :i8 = 0;
-        const MA :i8 = 1;
-        const EX :i8 = 2;
-        const LA :i8 = 4;
-        const OT :i8 = 8;
+        let mut flags :u8 = 0;
+        const MA :u8 = 1;
+        const EX :u8 = 2;
+        const LA :u8 = 4;
+        const OT :u8 = 8;
         if response.data.custom_id == "SubSkillsBtn" {
             println!("Submit: {:?}", response_data.clone());
             let mut skill_list: Vec<Cp2020Skill> = vec![];
@@ -427,28 +428,29 @@ async fn ask_skills(
             println!("Data: {:?}", response.data.values.clone());
             response_data.insert(response.data.custom_id.to_string(), response.data.values.clone());
         }
-        if let Err(why) = response
-            .create_interaction_response(&ctx.http, |rsp| {
-                rsp.kind(InteractionResponseType::ChannelMessageWithSource)
-                    .interaction_response_data(|msg| msg.content(format!("{:?}", response_data)).ephemeral(true))
-            })
-            .await
-        {
-            println!("Error sending response: {:?}", why);
-        }
+
+        println!("{response_data:?}");
+        // if let Err(why) = response
+        //     .create_interaction_response(&ctx.http, |rsp| {
+        //         rsp.kind(InteractionResponseType::ChannelMessageWithSource)
+        //             .interaction_response_data(|msg| msg.content(format!("{:?}", response_data)).ephemeral(true))
+        //     })
+        //     .await
+        // {
+        //     println!("Error sending response: {:?}", why);
+        // }
     }
 
 }
 
-async fn ask_more_skills(interaction: Arc<MessageComponentInteraction>, ctx: &Context, flags: i8) -> Vec<Cp2020Skill>
+async fn ask_more_skills(interaction: Arc<MessageComponentInteraction>, ctx: &Context, flags: u8) -> Vec<Cp2020Skill>
 {
-    const MA :i8 = 1;
-    const EX :i8 = 2;
-    const LA :i8 = 4;
-    const OT :i8 = 8;
+    const MA :u8 = 1;
+    const EX :u8 = 2;
+    const LA :u8 = 4;
+    const OT :u8 = 8;
 
     let _message = interaction
-//    .to_owned()
     .create_interaction_response(&ctx.http, |rsp| {
         rsp.kind(InteractionResponseType::Modal)
         .interaction_response_data(|response| {
